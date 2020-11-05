@@ -101,6 +101,7 @@ int ls_dir(MINODE *mip)
 
 int ls(char *pathname)  
 {
+  printf("%s", pathname);
   u32 *ino = malloc(32);
   printf("Entering ls.\n");
   findino(running->cwd, ino);
