@@ -40,28 +40,62 @@ char *rpwd(MINODE *wd)
 {
   MINODE *pip;
   int parent_ino;
-  u32 ino;
+  int ino, x = 0;
   char my_name[256];
+  DIR *dp;
+  char *cp;
+  char temp[256], buf[BLKSIZE];
   
   if(wd == root)
   	return;
   	
-  parent_ino = findino(wd, &ino);
+  get_block(dev, wd->INODE.i_block[0], buf);
+  dp = (DIR *)buf;
+  cp = buf;
+  
+  while(cp<buf+BLKSIZE && x<2)
+  {
+  	strncpy(temp, dp->name, dp->name_len);
+  	temp[dp->name_len] = 0;
+  	
+  	if(strcmp(temp, ".") == 0)
+  	{
+  		ino = dp->inode;
+  		x++;
+  	}
+  	if(strcmp(temp, "..") == 0)
+  	{
+  		parent_ino = dp->inode;
+  		x++;
+  	}
+  	cp += dp->rec_len;
+  	dp = (DIR *)cp;
+  }
   pip = iget(dev, parent_ino);
-  findmyname(pip, ino, my_name);
+  findmyname(pip, ino, &my_name);
   rpwd(pip);
   printf("/%s", my_name);
+
+
+  /*parent_ino = findino(wd, &ino);
+  pip = iget(dev, parent_ino);
+  findmyname(pip, ino, &my_name);
+  rpwd(pip);
+  printf("/%s", my_name);
+  iput(pip);*/
 }
 
 char *pwd(MINODE *wd)
 {
   if (wd == root)
-  {
-  	printf("/\n");
+  {	
+  	printf("CWD = /\n");
   }
   else
   {
+  	printf("CWD = ");
   	rpwd(wd);
+  	printf("\n");
   }
 }
 
