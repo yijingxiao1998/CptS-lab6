@@ -36,6 +36,7 @@ int chdir(char *pathname)
   }
 }
 
+char *PWD[NMINODE];
 char *rpwd(MINODE *wd)
 {
   MINODE *pip;
@@ -75,7 +76,8 @@ char *rpwd(MINODE *wd)
   findmyname(pip, ino, &my_name);
   rpwd(pip);
   printf("/%s", my_name);
-
+  strcat(PWD, "/");
+  strcat(PWD, my_name);
 
   /*parent_ino = findino(wd, &ino);
   pip = iget(dev, parent_ino);
@@ -90,12 +92,14 @@ char *pwd(MINODE *wd)
   if (wd == root)
   {	
   	printf("CWD = /\n");
+  	return "/";
   }
   else
   {
   	printf("CWD = ");
   	rpwd(wd);
   	printf("\n");
+  	return PWD;
   }
 }
 
