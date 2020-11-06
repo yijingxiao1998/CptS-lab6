@@ -132,14 +132,16 @@ int search(MINODE *mip, char *name)
   	get_block(mip->dev, mip->INODE.i_block[i], sbuf);
   	dp = (DIR *)sbuf;
   	cp = sbuf;
+  	printf("i_number rec_len name_len  name\n");
   	while(cp<sbuf + BLKSIZE)
   	{
   		strncpy(temp, dp->name, dp->name_len);
   		temp[dp->name_len] = 0;
-  		printf("%8d%8d%8u %s\n", dp->inode, dp->rec_len, dp->name_len, dp->inode);
+  		printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
   		if(strcmp(name, temp) == 0)
   		{
-  			printf("found &s : inumber = %d\n", name, dp->inode);
+  			printf("found %s : inumber = %d\n", name, dp->inode);
+  			
   			return dp->inode;
   		}
   		cp += dp->rec_len;
@@ -162,13 +164,14 @@ int getino(char *pathname)
   else
   	mip = running->cwd;    // if relative pathname: start from CWD
   mip->refCount++;            // in order to iput(mip) later
+
+  tokenize(pathname);              // assume: name[], nname are globals
   
-  tokenize(pathname);         // assume: name[], nname are globals
   for(i=0; i<nname; i++)       // search for each component string
   {
   	if(!S_ISDIR(mip->INODE.i_mode))  // check DIR type
   	{
-  		printf("%s is not a directory\n", name[i]);
+  		//printf("%s is not a directory\n", name[i]);
   		iput(mip);
   		return 0;
   	}
