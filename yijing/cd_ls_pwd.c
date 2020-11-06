@@ -9,16 +9,30 @@ int chdir(char *pathname)
   
   printf("cd %s\n", pathname);
   // READ Chapter 11.7.3 HOW TO chdir
-  if(pathname != 0)
-  	ino = getino(pathname);
+  if(pathname == '\0')
+  {  	//ino = root->ino;
+  	running->cwd = root;
+  }
   else
-  	ino = root->ino;
-  	
-  mip = iget(dev, ino);
-  if(S_ISDIR(mip->INODE.i_mode))  // if is a dir
   {
-  	iput(running->cwd);      // release old cwd
-  	running->cwd = mip;      // change cwd to mip
+  	ino = getino(pathname);
+  	printf("dev=%d ino=%d\n", dev, ino);
+  	if(ino == 0)   // does not exist
+  		return 0;
+  	
+  	mip = iget(dev, ino);   // set to correct ino #
+  	if(S_ISDIR(mip->INODE.i_mode))  // if is a dir
+  	{
+  		iput(running->cwd);      // release old cwd
+  		running->cwd = mip;      // change cwd to mip
+  	}
+  	else
+  	{
+  		printf("%s is not a dir\n", pathname);
+  		return 0;
+  	}
+  		
+  	//rpwd(running->cwd);
   }
 }
 
@@ -42,9 +56,13 @@ char *rpwd(MINODE *wd)
 char *pwd(MINODE *wd)
 {
   if (wd == root)
+  {
   	printf("/\n");
+  }
   else
+  {
   	rpwd(wd);
+  }
 }
 
 int ls_file(MINODE *mip, char *name)
@@ -132,10 +150,11 @@ int ls(char *pathname)
   char currentDir[NMINODE];
   //findino(running->cwd, ino);
 
-  if(pathname == '\0')
+  if(pathname[0] != '\0')
   {
   	printf("ls %s\n", pathname);
   	strcpy(currentDir, pwd(running->cwd));  // get current dir
+  	
   	chdir(pathname);  // get into this dir
   	ls_dir(running->cwd);  // ls this dir
   	chdir(currentDir);  // change back
