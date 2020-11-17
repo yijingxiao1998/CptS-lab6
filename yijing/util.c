@@ -4,6 +4,43 @@ int n;
 char gline[256];  // holds token strings, each pointed by a name[i]
 int nname = 0;    // number of token strings
 
+
+int tst_bit(char *buf, int bit)
+{
+  // in Chapter 11.8.1
+  return buf[bit/8] & (1 << (bit%8));
+}
+
+int set_bit(char *buf, int bit)
+{
+  // in Chapter 11.8.1
+  buf[bit/8] |= (1 << (bit % 8));
+}
+
+int ialloc(int dev)  // allocate an inode number from inode_bitmap
+{
+  int  i;
+  char buf[BLKSIZE];
+
+  // read inode_bitmap block
+  get_block(dev, imap, buf);
+
+  for (i=0; i < ninodes; i++){
+    if (tst_bit(buf, i)==0){
+        set_bit(buf, i);
+        put_block(dev, imap, buf);
+        printf("allocated ino = %d\n", i+1); // bits count from 0; ino from 1
+        return i+1;
+    }
+  }
+  return 0;
+}
+
+int balloc(int dev) // returns a FREE disk block number
+{
+
+}
+
 int get_block(int dev, int blk, char *buf)
 {
    lseek(dev, (long)blk*BLKSIZE, 0);
@@ -11,18 +48,22 @@ int get_block(int dev, int blk, char *buf)
    if(n<0)
    	printf("get_block [%d %d] error\n", dev, blk);
 }   
+
 int put_block(int dev, int blk, char *buf)
 {
    lseek(dev, (long)blk*BLKSIZE, 0);
    n = write(dev, buf, BLKSIZE);
    if(n != BLKSIZE)
-   	printf("put_block [%d %d] error\n", dev, blk);
+   {
+     printf("put_block [%d %d] error\n", dev, blk);
+   }
 }   
 
 int tokenize(char *pathname)
 {
   // copy pathname into gpath[]; tokenize it into name[0] to name[n-1]
   char *s;
+  nname = 0;
   strcpy(gline, pathname);
   s = strtok(gline, "/");
   while(s)
@@ -224,10 +265,9 @@ int findino(MINODE *mip, u32 *myino) // myino = ino of . return ino of ..
   //                                         return ino of ..
   char buf[BLKSIZE], *cp;
   DIR *dp;
-  
-  get_block(mip->dev, ip->i_block[0], buf);
   cp = buf;
   dp = (DIR *)buf;
+  get_block(mip->dev, ip->i_block[0], buf);
   *myino = dp->inode;
   cp += dp->rec_len;
   dp = (DIR *)cp;

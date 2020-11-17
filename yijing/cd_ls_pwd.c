@@ -10,7 +10,8 @@ int chdir(char *pathname)
   printf("cd %s\n", pathname);
   // READ Chapter 11.7.3 HOW TO chdir
   if(pathname == '\0')
-  {  	//ino = root->ino;
+  {  	
+    //ino = root->ino;
   	running->cwd = root;
   }
   else
@@ -37,6 +38,7 @@ int chdir(char *pathname)
 }
 
 char *PWD[NMINODE];
+
 char *rpwd(MINODE *wd)
 {
   MINODE *pip;
@@ -50,41 +52,40 @@ char *rpwd(MINODE *wd)
   if(wd == root)
   	return;
   	
-  get_block(dev, wd->INODE.i_block[0], buf);
-  dp = (DIR *)buf;
-  cp = buf;
+  // get_block(dev, wd->INODE.i_block[0], buf);
+  // dp = (DIR *)buf;
+  // cp = buf;
   
-  while(cp<buf+BLKSIZE && x<2)
-  {
-  	strncpy(temp, dp->name, dp->name_len);
-  	temp[dp->name_len] = 0;
+  // while(cp<buf+BLKSIZE && x<2)
+  // {
+  // 	strncpy(temp, dp->name, dp->name_len);
+  // 	temp[dp->name_len] = 0;
   	
-  	if(strcmp(temp, ".") == 0)
-  	{
-  		ino = dp->inode;
-  		x++;
-  	}
-  	if(strcmp(temp, "..") == 0)
-  	{
-  		parent_ino = dp->inode;
-  		x++;
-  	}
-  	cp += dp->rec_len;
-  	dp = (DIR *)cp;
-  }
-  pip = iget(dev, parent_ino);
-  findmyname(pip, ino, &my_name);
-  rpwd(pip);
-  printf("/%s", my_name);
-  strcat(PWD, "/");
-  strcat(PWD, my_name);
+  // 	if(strcmp(temp, ".") == 0)
+  // 	{
+  // 		ino = dp->inode;
+  // 		x++;
+  // 	}
+  // 	if(strcmp(temp, "..") == 0)
+  // 	{
+  // 		parent_ino = dp->inode;
+  // 		x++;
+  // 	}
+  // 	cp += dp->rec_len;
+  // 	dp = (DIR *)cp;
+  // }
+  // pip = iget(dev, parent_ino);
+  // findmyname(pip, ino, &my_name);
+  // rpwd(pip);
+  // printf("/%s", my_name);
+  // strcat(PWD, "/");
+  // strcat(PWD, my_name);
 
-  /*parent_ino = findino(wd, &ino);
+  parent_ino = findino(wd, &ino);
   pip = iget(dev, parent_ino);
   findmyname(pip, ino, &my_name);
   rpwd(pip);
   printf("/%s", my_name);
-  iput(pip);*/
 }
 
 char *pwd(MINODE *wd)
@@ -165,7 +166,8 @@ int ls_dir(MINODE *mip)
   dp = (DIR *)buf;
   cp = buf;
   
-  while (cp < buf + BLKSIZE){
+  while (cp < buf + BLKSIZE)
+  {
      strncpy(temp, dp->name, dp->name_len);
      temp[dp->name_len] = 0;
 	
@@ -173,9 +175,11 @@ int ls_dir(MINODE *mip)
      
      fmip = iget(dev, dp->inode);
      //fmip->dirty = 0;
-     ls_file(fmip, temp);
-     iput(mip);
-     
+     if(fmip)
+     {
+       ls_file(fmip, temp);
+       iput(fmip);
+     }
      cp += dp->rec_len;
      dp = (DIR *)cp;
   }
@@ -192,7 +196,6 @@ int ls(char *pathname)
   {
   	printf("ls %s\n", pathname);
   	strcpy(currentDir, pwd(running->cwd));  // get current dir
-  	
   	chdir(pathname);  // get into this dir
   	ls_dir(running->cwd);  // ls this dir
   	chdir(currentDir);  // change back
@@ -200,5 +203,4 @@ int ls(char *pathname)
   }	
   else
   	ls_dir(running->cwd);
-  
 }
