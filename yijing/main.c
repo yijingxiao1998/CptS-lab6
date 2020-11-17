@@ -29,6 +29,7 @@ MINODE *iget();
 
 #include "util.c"
 #include "cd_ls_pwd.c"
+#include "mkdir_creat.c"
 
 int init()
 {
