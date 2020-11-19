@@ -120,89 +120,90 @@ int rmdir()
 
 int rm_child(MINODE *parent, char *name)
 {
-   int i, j, tl;
-   char *cp, temp[256], sbuf[BLKSIZE];
-   DIR *dp;
+   int i, j, len = 0, pre = 0, t;
+   char *cp, temp[256], sbuf[BLKSIZE], *cptemp;
+   DIR *dp, *dptemp;
    //1. Search parent INODE's data block(s) for the entry of name
    for(i=0; i<12; i++)      // search DIR direct blocks only
    {
    	//2. Erase name entry from parent directory by
   	if(parent->INODE.i_block[i] == 0)
-  		return 0;
+  		continue
   	get_block(parent->dev, parent->INODE.i_block[i], sbuf);
   	dp = (DIR *)sbuf;
   	cp = sbuf;
   	
-  	/*if(strcmp(name, temp) == 0)
-  	{
-  		for(j = i; j<12; j++)
-  		{
-  			pmip->INODE.i_block[j] = pmip->INODE.i_block[j+1];
-  		}
-  		pmip->INODE.i_size -= BLKSIZE;  // reduce parent's file size by BLKSIZE
-  		put_block(pmip->dev, pmip->INODE.i_block[i], sbuf);
-  		return 1;
-  	}*/
-  	j = 0;
-  	tl = 0;
   	while(cp<sbuf + BLKSIZE)
   	{
   		strncpy(temp, dp->name, dp->name_len);
   		temp[dp->name_len] = 0;
-  		tl += dp->rec_len;
-  		if(strcmp(name, temp) == 0)
+
+  		if(strcmp(name, temp) != 0)
   		{
-  			// not first entry
-  			
-  			}
+  			len += dp->rec_len;
+  			pre = dp->rec_len;
+  			cp += dp->rec_len;
+  			dp = (DIR *)cp;
   		}
-  		else if(dp->rec_len == 0)
-  			break;
-  		cp += dp->rec_len;
-  		dp = (DIR *)cp;
+  		
+  		if(dp->rec_len == BLKSIZE)  // first and only entry on block
+  		{
+  			memset(sbuf, 0, BLKSIZE);
+  			put_block(parent->dev, parent->INODE.i_block[i], suf);
+  			// deallocate the data block
+  			bdealloc(parent->dev, parent->INODE.i_block[i]);
+  			// reduce parent's file size by BLKSIZE
+  			parent->INODE.i_size -= BLKSIZE;
+  			
+  			for(j = i; j < 11; j++)
+  			{
+  				parent->INODE.i_block[j] = parent->INODE.i_block[j+1];
+  			}
+  			parent->INODE.i_block[11] = 0;
+  		}
+  		else if(len + dp->rec_len == BLKSIZE)  // last entry in block
+  		{
+  			len -= pre;
+  			cp -= pre;
+  			dp = (DIR *)cp;
+  			dp->rec_len = BLKSIZE - len;
+  			put_block(parent->dev, parent->INODE.i_block[i], sbuf);
+  		}
+  		// entry is first but not the only entry or in the middle of block
+  		else
+  		{
+  			// move all trailing entries left to overlay the deleted entry
+  			t = dp->rec_len;
+  			cptemp = cp + dp->rec_len;
+  			dptemp = (DIR *)cptemp;
+  			while(len + t + dp->rec_len < BLKSIZE)
+  			{
+  				dp->INODE = dptemp->INODE;
+  				dp->name_len = dptemp->name_len;
+  				strncpy(dp->name, dptemp->name, dptemp->name_len);
+  				dp->rec_len = dptemp->rec_len;
+  				
+  				// set to next position
+  				cp += dptemp->rec_len;
+  				cptemp += dptemp->rec_len;
+  				
+  				// and set next value
+  				len += dptemp->rec_len;
+  				cptemp += dptemp->rec_len;
+  				dptemp = (DIR *)cptemp;
+  				
+  				if(dptemp->rec_len == 0)
+  					return;
+  			}
+  			dp->INODE = dptemp->INODE;
+  			dp->name_len = dptemp->name_len;
+  			strncpy(dp->name, dptemp->name, dptemp->name_len);
+  			dp->rec_len = BLKSIZE - len;
+  			
+  			put_block(parent->dev, parent->INODE.i_block[i], sbuf);  // Write the parent's data block back to disk
+  		}
+  		parent->dirty = 1;  // mark parent minode DIRTY for write-back
+  		return;
   	}
    }
-   if(dp->rec_len == 0)
-   {
-   	printf("Did not fine %s\n", name);
-   	return 0;
-   }   
-   
-   // if first and only entry in a data block
-   
-    
-  (2). if in the middle of a block{
-          move all entries AFTER this entry LEFT;
-          add removed rec_len to the LAST entry of the block;
-          no need to change parent's fileSize;
-
-               | remove this entry   |
-          -----------------------------------------------
-          xxxxx|INO rlen nlen NAME   |yyy  |zzz         | 
-          -----------------------------------------------
-
-                  becomes:
-          -----------------------------------------------
-          xxxxx|yyy |zzz (rec_len INC by rlen)          |
-          -----------------------------------------------
-
-      }
-  
-  (3). if (first entry in a data block){
-          deallocate the data block; modify parent's file size;
-
-          -----------------------------------------------
-          |INO Rlen Nlen NAME                           | 
-          -----------------------------------------------
-          
-          Assume this is parent's i_block[i]:
-          move parent's NONZERO blocks upward, i.e. 
-               i_block[i+1] becomes i_block[i]
-               etc.
-          so that there is no HOLEs in parent's data block numbers
-      }
-
-    
-  3. Write the parent's data block back to disk;
-     mark parent minode DIRTY for write-back
 }
