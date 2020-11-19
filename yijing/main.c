@@ -113,7 +113,7 @@ int main(int argc, char *argv[ ])
   printf("root refCount = %d\n", root->refCount);
 
   while(1){
-    printf("input command : [ls|cd|pwd|quit] ");
+    printf("input command : [ls|cd|pwd|quit|mkdir|creat] ");
     fgets(line, 128, stdin);
     line[strlen(line)-1] = 0;
 
@@ -133,7 +133,7 @@ int main(int argc, char *argv[ ])
     if (strcmp(cmd, "quit")==0)
        quit();
     if(strcmp(cmd, "mkdir") == 0)
-      mk_dir(pathname);
+      make_dir(pathname);
     if(strcmp(cmd, "creat") == 0)
       creat_file(pathname);
   }

@@ -73,7 +73,7 @@ typedef struct mtable{
   int bmap;                // from group descriptor
   int imap;
   int iblock;              // inodes start block
-  MINPDE *mntDirPtr;       // mount point DIR pointer
+  MINODE *mntDirPtr;       // mount point DIR pointer
   char devName[64];        // device name
   char mntName[64];        // mount point DIR name
 }MTABLE;

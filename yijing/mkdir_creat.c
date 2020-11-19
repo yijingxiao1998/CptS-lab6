@@ -4,6 +4,7 @@ int mymkdir(MINODE* pip, char* child)
    //(4).1. Allocate an INODE and a disk block:
    int ino = ialloc(dev);
    int blk = balloc(dev);
+   printf("ino = %d, blk = %d\n", ino, blk);
    MINODE* mip = iget(dev, ino); // load INODE into a minode
    //initialize mip->INODE as a DIR INODE;
    INODE *ip = &mip->INODE;
@@ -41,7 +42,9 @@ int mymkdir(MINODE* pip, char* child)
    // write to disk block blk.
    // (4).4. enter_child(pmip, ino, basename); which enters
    // (ino, basename) as a dir_entry to the parent INODE;
-   enter_name(pip, ino, name);
+   enter_name(pip, ino, child);
+   printf("Quit mkmydir\n");
+   return 0;
 }
 
 int mycreat(MINODE* pip, char* child)
@@ -91,65 +94,38 @@ int mycreat(MINODE* pip, char* child)
    // write to disk block blk.
    // (4).4. enter_child(pmip, ino, basename); which enters
    // (ino, basename) as a dir_entry to the parent INODE;
-   enter_name(pip, ino, name);
+   enter_name(pip, ino, child);
+   return ino;
 }
 
-int enter_name(MINODE *pip, int ino, char *name)
-{
-   /****************** Algorithm of enter_name *******************/
-   for(int i =0; i<12; i++) //each data block of parent DIR do // assume: only 12 direct blocks
-   {
-      if (i_block[i]==0) BREAK; 
-      // to step (5) below
-      (1). Get parent’s data block into a buf[ ];
-      (2). In a data block of the parent directory, each dir_entry has an ideal
-      length
-      ideal_length = 4*[ (8 + name_len + 3)/4 ] // a multiple of 4
-      All dir_entries rec_len = ideal_length, except the last entry. The
-      rec_len of the LAST entry is to the end of the block, which may be
-      larger than its ideal_length.
-      (3). In order to enter a new entry of name with n_len, the needed length is
-      need_length = 4*[ (8 + n_len + 3)/4 ] // a multiple of 4
-      (4). Step to the last entry in the data block:
-      get_block(parent->dev, parent->INODE.i_block[i], buf);
-      dp = (DIR *)buf;
-      cp = buf;
-      while (cp + dp->rec_len < buf + BLKSIZE)
-      {
-         cp += dp->rec_len;
-         dp = (DIR *)cp;
-      }
-      // dp NOW points at last entry in block
-      remain = LAST entry’s rec_len - its ideal_length;
-      if (remain >= need_length)
-      {
-         enter the new entry as the LAST entry and
-         trim the previous entry rec_len to its ideal_length;
-      }
-      goto step (6);
-   }
-}
 
 int make_dir(char* pathname)
 {
    MINODE *start,*pip;		   
    int pino;
-   char * parent, child;
+   char *parent, *child;
    
    // 1. pahtname = absolute: start = root;         dev = root->dev;
    //             = relative: start = running->cwd; dev = running->cwd->dev;
-   if(start == root)
+   if(pathname[0] == '/')
    {
+      printf("Absolute pathname\n");
+      start = root;
       dev = root ->dev;
    }
-   else if(start == running ->cwd)
+   else
    {
+      printf("Relative pathname\n");
+      start == running ->cwd;
       dev = running->cwd->dev;
    }
    // 2. Let  pathname = a/b/c
-   parent = dirname(pathname);   //parent= "/a/b" OR "a/b"
-   child  = basename(pathname);  //child = "c"
-
+   char *temp1 = malloc(BLKSIZE), *temp2 = malloc(BLKSIZE);
+   strcpy(temp1, pathname);
+   strcpy(temp2, pathname);
+   parent=dirname(temp1);   //parent= "/a/b" OR "a/b"
+   child=basename(temp2);  //child = "c"
+   printf("Parent is: %s; child is: %s\n", parent, child);
    //    WARNING: strtok(), dirname(), basename() destroy pathname
 
    // 3. Get minode of parent:
@@ -162,8 +138,8 @@ int make_dir(char* pathname)
 
    if(S_ISDIR(pip->INODE.i_mode)&&search(pip, child)==0)
    {
+      printf("Ready to add dir\n");
       mymkdir(pip, child);
-
    }
    else
    {
@@ -177,7 +153,7 @@ int make_dir(char* pathname)
    pip->INODE.i_links_count+=1;
    pip->INODE.i_atime = time(0L);
    pip->dirty = 1;
-   iput(pip);  
+   iput(pip);
 }
 
 int creat_file(char * pathname)
@@ -189,7 +165,7 @@ int creat_file(char * pathname)
    // (3). links_count = 1; Do not increment parent INODE’s links_count
     MINODE *start,*pip;		   
    int pino;
-   char * parent, child;
+   char * parent, *child;
    
    // 1. pahtname = absolute: start = root;         dev = root->dev;
    //             = relative: start = running->cwd; dev = running->cwd->dev;
