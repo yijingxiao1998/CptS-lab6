@@ -28,12 +28,11 @@ int nblocks, ninodes, bmap, imap, inode_start;
 MINODE *iget();
 
 #include "util.c"
+#include "rmdir.c"
 #include "cd_ls_pwd.c"
 #include "mkdir_creat.c"
-#include "rmdir.c"
 #include "alloc_dealloc.c"
-#include "link_unlink.c"
-#include "symlink_readlink.c"
+#include "link_unlink_symlink.c"
 
 int init()
 {
@@ -61,8 +60,8 @@ int init()
   }
 }
 
-// load root INODE and set root pointer to it
-int mount_root()
+// load root INODE and set root pointer to it (p 328)
+int mount_root()  // mount root file system
 {  
   printf("mount_root()\n");
   root = iget(dev, 2);
@@ -73,7 +72,7 @@ int main(int argc, char *argv[ ])
 {
   int ino;
   char buf[BLKSIZE];
-  char line[128], cmd[32], pathname[128];
+  char line[128], cmd[32], pathname[128], temp[128];
 
   if (argc > 1)
     disk = argv[1];
@@ -117,7 +116,7 @@ int main(int argc, char *argv[ ])
   printf("root refCount = %d\n", root->refCount);
 
   while(1){
-    printf("input command : [ls|cd|pwd|quit|mkdir|creat|rmdir] ");
+    printf("input command : [ls|cd|pwd|mkdir|rmdir|creat|link|unlink|quit] ");
     fgets(line, 128, stdin);
     line[strlen(line)-1] = 0;
 
@@ -125,8 +124,8 @@ int main(int argc, char *argv[ ])
        continue;
     pathname[0] = 0;
 
-    sscanf(line, "%s %s", cmd, pathname);
-    printf("cmd=%s pathname=%s\n", cmd, pathname);
+    sscanf(line, "%s %s %s", cmd, pathname, temp);
+    printf("cmd=%s pathname=%s %s\n", cmd, pathname, temp);
   
     if (strcmp(cmd, "ls")==0)
        ls(pathname);
@@ -134,14 +133,21 @@ int main(int argc, char *argv[ ])
        chdir(pathname);
     if (strcmp(cmd, "pwd")==0)
        pwd(running->cwd);
-    if (strcmp(cmd, "quit")==0)
-       quit();
     if(strcmp(cmd, "mkdir") == 0)
       make_dir(pathname);
     if(strcmp(cmd, "creat") == 0)
       creat_file(pathname);
     if(strcmp(cmd, "rmdir")==0)
       rmdir(pathname);
+    if(strcmp(cmd, "link") == 0)
+    {
+    	link(pathname, temp);
+    }
+    if(strcmp(cmd, "unlink") == 0)
+    	unlink(pathname);
+
+    if (strcmp(cmd, "quit")==0)
+       quit();
   }
 }
 
