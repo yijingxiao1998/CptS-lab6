@@ -4,57 +4,6 @@ int n;
 char gline[256];  // holds token strings, each pointed by a name[i]
 int nname = 0;    // number of token strings
 
-
-int tst_bit(char *buf, int bit)
-{
-  // in Chapter 11.8.1
-  return buf[bit/8] & (1 << (bit%8));
-}
-
-int set_bit(char *buf, int bit)
-{
-  // in Chapter 11.8.1
-  buf[bit/8] |= (1 << (bit % 8));
-}
-
-int ialloc(int dev)  // allocate an inode number from inode_bitmap
-{
-  int  i;
-  char buf[BLKSIZE];
-
-  // read inode_bitmap block
-  get_block(dev, imap, buf);
-
-  for (i=0; i < ninodes; i++){
-    if (tst_bit(buf, i)==0){
-        set_bit(buf, i);
-        put_block(dev, imap, buf);
-        printf("allocated ino = %d\n", i+1); // bits count from 0; ino from 1
-        return i+1;
-    }
-  }
-  return 0;
-}
-
-int balloc(int dev) // returns a FREE disk block number
-{
-  int  i;
-  char buf[BLKSIZE];
-
-  // read inode_bitmap block
-  get_block(dev, imap, buf);
-
-  for (i=0; i < nblocks; i++){
-    if (tst_bit(buf, i)==0){
-        set_bit(buf, i);
-        put_block(dev, imap, buf);
-        printf("allocated ino = %d\n", i+1); // bits count from 0; ino from 1
-        return i+1;
-    }
-  }
-  return 0;
-}
-
 int get_block(int dev, int blk, char *buf)
 {
    lseek(dev, (long)blk*BLKSIZE, 0);
