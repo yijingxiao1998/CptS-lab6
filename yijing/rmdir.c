@@ -1,8 +1,13 @@
 //Assume: command line = "rmdir pathname"
 //1. Extract cmd, pathname from line and save them as globals.
 
-int rmdir()
+int rmdir(char *pathname)
 {
+  if(strcmp(pathname, "") == 0)
+  {
+     printf("needs path\n");
+     return -1;
+  }
   //2. get inumber of pathname: determine dev, then  
   int ino = getino(pathname); 
   
@@ -26,8 +31,8 @@ int rmdir()
      	printf("uid match\n");
   }
  
-  ------------------------------------------------------------------------
-  /*5. check DIR type (HOW?), not BUSY (HOW?) AND is empty:
+  /*------------------------------------------------------------------------
+  5. check DIR type (HOW?), not BUSY (HOW?) AND is empty:
 
   HOWTO check whether a DIR is empty:
   First, check link count (links_count > 2 means not empty);*/
@@ -56,60 +61,67 @@ int rmdir()
      
   /*However, links_count == 2 may still have FILEs, so go through its data 
   block(s) to see whether it has any entries in addition to . and ..*/
-  char *cp;
-  char buf[BLKSIZE];
+  char buf[BLKSIZE], temp[256];
   get_block(dev, mip->INODE.i_block[0], buf);   // get data block into buf[]
   dp = (DIR *)buf;    //as dir_entry
+  char *cp;
   cp = buf;
-  int x = 0;
+  int i = 0, x = 0, pino;
   
-  // traverse data blocks for number of entries = 2
-  while(cp<buf+BLKSIZE && x<2)
+  // traverse data blocks
+  for(; i<12; i++)
   {
-  	if(strcmp(dp->name, "."))
+  	while(cp<buf+BLKSIZE)
   	{
-  		iput(mip);
-  		return -1;
-  	}
-  	if(strcmp(temp, "..") == 0)
-  	{
-  		iput(mip);
-  		return -1;
-  	}
-  	cp += dp->rec_len;   // advance cp by rec_len
-  	dp = (DIR *)cp;      // pull dp to next entry
-  	x++;
-  }  
+  		strncpy(temp, dp->name, dp->name_len);
+  		temp[dp->name_len] = 0;
+  		if(strcmp(temp, ".") != 0)
+  		{
+  			if(strcmp(temp, "..") != 0)
+  			{
+  				printf("dir is not empty\n");
+  				iput(mip);
+  				return -1;
+  			}
+  			else
+  			{
+  				pino = dp->inode;
+  			}
+  		}
+  		cp += dp->rec_len;   // advance cp by rec_len
+  		dp = (DIR *)cp;      // pull dp to next entry
+  		x++;
+  	}  
+  }
+  if(x>2)
+  {
+  	printf("dir is not empty\n");
+  	iput(mip);
+  	return -1;
+  }
 
   /*6. ASSUME passed the above checks.
      Deallocate its block and inode:*/
-
   for (i=0; i<12; i++){
          if (mip->INODE.i_block[i]==0)
              continue;
-         bdealloc(mip->dev, mip->INODE.i_block[i]);
+         bdalloc(mip->dev, mip->INODE.i_block[i]);
   }
-  idealloc(mip->dev, mip->ino);
+  idalloc(mip->dev, mip->ino);
     
   iput(mip); //(which clears mip->refCount = 0);
      
 
   //7. get parent DIR's ino and minode (pointed by pip);
-  int pino = findino();   // get pino from .. entry in INODE.i_block[0]
   MINODE *pmip = iget(mip->dev, pino);
 
   //8. remove child's entry from parent directory by
-  char *temp;
-  char child[64], pntemp[64];
-  strcpy(pntemp, pathname);
-  temp = base(pntemp);
-  strcpy(child, temp);
-  rm_child(pmip, child);
+  rm_child(pmip, pathname);
 
   //9. decrement pip's link_count by 1; 
   pmip->INODE.i_links_count--;
   //touch pip's atime, mtime fields;
-  pmip->INODE.i_atime = pmip->INODE.i_mtime = time(0);
+  pmip->INODE.i_atime = pmip->INODE.i_mtime = time(0L);
   // mark pip dirty;
   pmip->dirty = 1;
   iput(pmip);
@@ -128,7 +140,7 @@ int rm_child(MINODE *parent, char *name)
    {
    	//2. Erase name entry from parent directory by
   	if(parent->INODE.i_block[i] == 0)
-  		continue
+  		continue;
   	get_block(parent->dev, parent->INODE.i_block[i], sbuf);
   	dp = (DIR *)sbuf;
   	cp = sbuf;
@@ -149,9 +161,9 @@ int rm_child(MINODE *parent, char *name)
   		if(dp->rec_len == BLKSIZE)  // first and only entry on block
   		{
   			memset(sbuf, 0, BLKSIZE);
-  			put_block(parent->dev, parent->INODE.i_block[i], suf);
+  			put_block(parent->dev, parent->INODE.i_block[i], sbuf);
   			// deallocate the data block
-  			bdealloc(parent->dev, parent->INODE.i_block[i]);
+  			idalloc(parent->dev, parent->INODE.i_block[i]);
   			// reduce parent's file size by BLKSIZE
   			parent->INODE.i_size -= BLKSIZE;
   			
@@ -178,7 +190,7 @@ int rm_child(MINODE *parent, char *name)
   			dptemp = (DIR *)cptemp;
   			while(len + t + dp->rec_len < BLKSIZE)
   			{
-  				dp->INODE = dptemp->INODE;
+  				dp->inode = dptemp->inode;
   				dp->name_len = dptemp->name_len;
   				strncpy(dp->name, dptemp->name, dptemp->name_len);
   				dp->rec_len = dptemp->rec_len;
@@ -195,7 +207,7 @@ int rm_child(MINODE *parent, char *name)
   				if(dptemp->rec_len == 0)
   					return;
   			}
-  			dp->INODE = dptemp->INODE;
+  			dp->inode = dptemp->inode;
   			dp->name_len = dptemp->name_len;
   			strncpy(dp->name, dptemp->name, dptemp->name_len);
   			dp->rec_len = BLKSIZE - len;
