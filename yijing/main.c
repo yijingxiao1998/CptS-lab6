@@ -30,6 +30,10 @@ MINODE *iget();
 #include "util.c"
 #include "cd_ls_pwd.c"
 #include "mkdir_creat.c"
+#include "rmdir.c"
+#include "alloc_dealloc.c"
+#include "link_unlink.c"
+#include "symlink_readlink.c"
 
 int init()
 {
@@ -113,7 +117,7 @@ int main(int argc, char *argv[ ])
   printf("root refCount = %d\n", root->refCount);
 
   while(1){
-    printf("input command : [ls|cd|pwd|quit|mkdir|creat] ");
+    printf("input command : [ls|cd|pwd|quit|mkdir|creat|rmdir] ");
     fgets(line, 128, stdin);
     line[strlen(line)-1] = 0;
 
@@ -136,6 +140,8 @@ int main(int argc, char *argv[ ])
       make_dir(pathname);
     if(strcmp(cmd, "creat") == 0)
       creat_file(pathname);
+    if(strcmp(cmd, "rmdir")==0)
+      rmdir(pathname);
   }
 }
 
