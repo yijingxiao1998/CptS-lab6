@@ -301,7 +301,7 @@ int enter_name(MINODE *pip, int ino, char *name)
      //each data block of parent DIR do // assume: only 12 direct blocks
       if (pip->INODE.i_block[i]==0)
       {
-        printf("ERROR!\n");
+        printf("ERROR! empty block\n");
         return -1; 
       }
       // to step (5) below

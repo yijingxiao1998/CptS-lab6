@@ -143,7 +143,7 @@ int make_dir(char* pathname)
    }
    else
    {
-      printf("ERROR!\n");
+      printf("ERROR! it's already existed or parent is not a dir type\n");
       return -1;
    }
    
@@ -193,11 +193,12 @@ int creat_file(char * pathname)
 
    if(S_ISDIR(pip->INODE.i_mode)&&search(pip, child)==0)
    {
+      printf("Ready to add file\n");
       mycreat(pip, child);
    }
    else
    {
-      printf("ERROR!\n");
+      printf("ERROR!it's already existed or parent is not a dir type\n");
       return -1;
    }
    
