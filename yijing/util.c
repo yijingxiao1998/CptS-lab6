@@ -323,11 +323,10 @@ int enter_name(MINODE *pip, int ino, char *name)
       printf("step to LAST entry in data block %d\n", blk);
       while (cp + dp->rec_len < buf + BLKSIZE)
       {
-        //  strncpy(temp, dp->name, dp->name_len);
-        //  temp[dp->name_len] = 0;
+         strncpy(temp, dp->name, dp->name_len);
+         temp[dp->name_len] = 0;
          printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
          //ideal_length = 4*( (8 + dp->name_len + 3)/4 );
-         printf("rec_len: %d\n", dp->rec_len);
          cp += dp->rec_len;
          dp = (DIR *)cp;
          printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
