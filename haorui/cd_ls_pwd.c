@@ -2,23 +2,110 @@
 char *t1 = "xwrxwrxwr-------";
 char *t2 = "----------------";
 
+char *PWD[NMINODE];
+char *rpwd(MINODE *wd)
+{
+  MINODE *pip;
+  int parent_ino;
+  int ino, x = 0;
+  char *my_name = malloc(256);
+  DIR *dp;
+  char *cp;
+  char temp[256], buf[BLKSIZE];
+  
+  if(wd == root)
+  	return;
+  	
+  // get_block(dev, wd->INODE.i_block[0], buf);
+  // dp = (DIR *)buf;
+  // cp = buf;
+  
+  // while(cp<buf+BLKSIZE && x<2)
+  // {
+  // 	strncpy(temp, dp->name, dp->name_len);
+  // 	temp[dp->name_len] = 0;
+  	
+  // 	if(strcmp(temp, ".") == 0)
+  // 	{
+  // 		ino = dp->inode;
+  // 		x++;
+  // 	}
+  // 	if(strcmp(temp, "..") == 0)
+  // 	{
+  // 		parent_ino = dp->inode;
+  // 		x++;
+  // 	}
+  // 	cp += dp->rec_len;
+  // 	dp = (DIR *)cp;
+  // }
+  // pip = iget(dev, parent_ino);
+  // findmyname(pip, ino, &my_name);
+  // rpwd(pip);
+  // printf("/%s", my_name);
+  // strcat(PWD, "/");
+  // strcat(PWD, my_name);
+  parent_ino = findino(wd, &ino);
+  pip = iget(dev, parent_ino);
+  findmyname(pip, ino, my_name);
+  rpwd(pip);
+  printf("/%s", my_name);
+}
+
 int chdir(char *pathname)   
 {
   MINODE *mip;
   int ino;
   
-  printf("cd %s\n", pathname);
+  
   // READ Chapter 11.7.3 HOW TO chdir
-  if(pathname != 0)
-  	ino = getino(pathname);
+  if(pathname == '\0')
+  {  	
+    //ino = root->ino;
+    printf("Change to root\n");
+  	running->cwd = root;
+  }
   else
-  	ino = root->ino;
-  	
-  mip = iget(dev, ino);
-  if(S_ISDIR(mip->INODE.i_mode))  // if is a dir
   {
-  	iput(running->cwd);      // release old cwd
-  	running->cwd = mip;      // change cwd to mip
+    printf("cd %s\n", pathname);
+  	ino = getino(pathname);
+  	printf("dev=%d ino=%d\n", dev, ino);
+  	if(ino == 0)
+    {
+      // does not exist
+  		return 0;
+    }  
+  	printf("Check if mip is a dir\n");
+  	mip = iget(dev, ino);   // set to correct ino #
+  	if(S_ISDIR(mip->INODE.i_mode))  // if is a dir
+  	{
+      printf("cd success\n");
+  		iput(running->cwd);      // release old cwd
+  		running->cwd = mip;      // change cwd to mip
+  	}
+  	else
+  	{
+  		printf("%s is not a dir\n", pathname);
+  		return 0;
+  	}
+  }
+}
+
+
+
+char *pwd(MINODE *wd)
+{
+  printf("Print cwd\n");
+  if (wd == root)
+  {	
+  	printf("CWD = /\n");
+  	//return "/";
+    return 0;
+  }
+  else
+  {
+  	printf("CWD = ");
+  	rpwd(wd);
+  	printf("\n");
   }
 }
 
@@ -55,7 +142,9 @@ int ls_file(MINODE *mip, char *name)
   printf("%8d ", ip->i_size);             // file size in bytes
   
   // print time
-  printf("%s", ctime(&ip->i_atime));  // pass & of time field prints i_atime in calendar form
+  strcpy(ftime, ctime(&ip->i_mtime));  // pass & of time field prints i_atime in calendar form
+  ftime[strlen(ftime)-1] = 0;  // kill \n at end
+  printf("%s  ", ftime);
   /*strcpy(ftime, ctime(&ip->i_ctime));    // print time in calendar form
   ftime[strlen(ftime)-1] = 0;            // kill \n at end
   printf("%s ", ftime);*/
@@ -66,7 +155,7 @@ int ls_file(MINODE *mip, char *name)
   // print -> linkname if symbolic file
   if((ip->i_mode & 0xF000) == 0xA000)
   	printf(" -> %s", l_name);
-  iput(mip);
+  //iput(mip);
   printf("\n");
 }
 
@@ -82,59 +171,41 @@ int ls_dir(MINODE *mip)
   dp = (DIR *)buf;
   cp = buf;
   
-  while (cp < buf + BLKSIZE){
+  while (cp < buf + BLKSIZE)
+  {
      strncpy(temp, dp->name, dp->name_len);
      temp[dp->name_len] = 0;
 	
-     printf("[%d %s]  ", dp->inode, temp); // print [inode# name]
+     //printf("[%d %s]  ", dp->inode, temp); // print [inode# name]
      
      fmip = iget(dev, dp->inode);
-     fmip->dirty = 0;
-     ls_file(fmip, temp);
-     
+     //fmip->dirty = 0;
+     if(fmip)
+     {
+       ls_file(fmip, temp);
+       //iput(fmip);
+     }
      cp += dp->rec_len;
      dp = (DIR *)cp;
   }
   printf("\n");
-  iput(mip);
 }
 
 int ls(char *pathname)  
 {
-  printf("%s", pathname);
   u32 *ino = malloc(32);
-  printf("Entering ls.\n");
-  findino(running->cwd, ino);
-  printf("ls %s\n", pathname);
-  if(pathname != 0)
-  	ino = getino(pathname);
-  	
-  if(ino != 0)
-  ls_dir(iget(dev, *ino));
-  //ls_dir(running->cwd);
-}
+  char currentDir[NMINODE];
+  //findino(running->cwd, ino);
 
-char *rpwd(MINODE *wd)
-{
-  MINODE *pip;
-  int parent_ino;
-  u32 ino;
-  char my_name[256];
-  
-  if(wd == root)
-  	return;
-  	
-  parent_ino = findino(wd, &ino);
-  pip = iget(dev, parent_ino);
-  findmyname(pip, ino, my_name);
-  rpwd(pip);
-  printf("/%s", my_name);
-}
-
-char *pwd(MINODE *wd)
-{
-  if (wd == root)
-  	printf("/\n");
+  if(pathname[0] != '\0')
+  {
+  	printf("ls %s\n", pathname);
+  	strcpy(currentDir, pwd(running->cwd));  // get current dir
+  	chdir(pathname);  // get into this dir
+  	ls_dir(running->cwd);  // ls this dir
+  	chdir(currentDir);  // change back
+  	//ino = getino(pathname);
+  }	
   else
-  	rpwd(wd);
+  	ls_dir(running->cwd);
 }

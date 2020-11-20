@@ -11,18 +11,22 @@ int get_block(int dev, int blk, char *buf)
    if(n<0)
    	printf("get_block [%d %d] error\n", dev, blk);
 }   
+
 int put_block(int dev, int blk, char *buf)
 {
    lseek(dev, (long)blk*BLKSIZE, 0);
    n = write(dev, buf, BLKSIZE);
    if(n != BLKSIZE)
-   	printf("put_block [%d %d] error\n", dev, blk);
+   {
+     printf("put_block [%d %d] error\n", dev, blk);
+   }
 }   
 
 int tokenize(char *pathname)
 {
   // copy pathname into gpath[]; tokenize it into name[0] to name[n-1]
   char *s;
+  nname = 0;
   strcpy(gline, pathname);
   s = strtok(gline, "/");
   while(s)
@@ -132,14 +136,16 @@ int search(MINODE *mip, char *name)
   	get_block(mip->dev, mip->INODE.i_block[i], sbuf);
   	dp = (DIR *)sbuf;
   	cp = sbuf;
+  	printf("i_number rec_len name_len  name\n");
   	while(cp<sbuf + BLKSIZE)
   	{
   		strncpy(temp, dp->name, dp->name_len);
   		temp[dp->name_len] = 0;
-  		printf("%8d%8d%8u %s\n", dp->inode, dp->rec_len, dp->name_len, dp->inode);
+  		printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
   		if(strcmp(name, temp) == 0)
   		{
-  			printf("found &s : inumber = %d\n", name, dp->inode);
+  			printf("found %s : inumber = %d\n", name, dp->inode);
+  			
   			return dp->inode;
   		}
   		cp += dp->rec_len;
@@ -162,13 +168,14 @@ int getino(char *pathname)
   else
   	mip = running->cwd;    // if relative pathname: start from CWD
   mip->refCount++;            // in order to iput(mip) later
+
+  tokenize(pathname);              // assume: name[], nname are globals
   
-  tokenize(pathname);         // assume: name[], nname are globals
   for(i=0; i<nname; i++)       // search for each component string
   {
   	if(!S_ISDIR(mip->INODE.i_mode))  // check DIR type
   	{
-  		printf("%s is not a directory\n", name[i]);
+  		//printf("%s is not a directory\n", name[i]);
   		iput(mip);
   		return 0;
   	}
@@ -198,7 +205,7 @@ int findmyname(MINODE *parent, u32 myino, char *myname)
   {
   	if(parent->INODE.i_block[i] == 0)
   		return 0;
-  	get_block(dev, parent->INODE.i_block[i], sbuf);
+  	get_block(parent->dev, parent->INODE.i_block[i], sbuf);
   	dp = (DIR *)sbuf;
   	cp = sbuf;
   	while(cp<sbuf + BLKSIZE)
@@ -220,12 +227,85 @@ int findino(MINODE *mip, u32 *myino) // myino = ino of . return ino of ..
   // mip->a DIR minode. Write YOUR code to get mino=ino of .
   //                                         return ino of ..
   char buf[BLKSIZE], *cp;
-  DIR *dp, *pad;
-  get_block(mip->dev, mip->INODE.i_block[0], buf);
+  DIR *dp;
   cp = buf;
   dp = (DIR *)buf;
+  get_block(mip->dev, ip->i_block[0], buf);
   *myino = dp->inode;
   cp += dp->rec_len;
-  pad = (DIR *)cp;
-  return pad;
+  dp = (DIR *)cp;
+  return dp->inode;
+}
+
+int enter_name(MINODE *pip, int ino, char *name)
+{
+   /****************** Algorithm of enter_name *******************/
+   printf("Entering enter_name\n");
+   char buf[BLKSIZE], *cp, temp[256];
+   int ideal_length, need_length;
+   
+   for(int i =0; i<12; i++) 
+   {
+     printf("Cur block#:%d\n", i);
+     //each data block of parent DIR do // assume: only 12 direct blocks
+      if (pip->INODE.i_block[i]==0)
+      {
+        printf("ERROR! empty block\n");
+        return -1; 
+      }
+      // to step (5) below
+      //(1). Get parent’s data block into a buf[ ];
+      // (2). In a data block of the parent directory, each dir_entry has an ideal length
+      //int ideal_length = 4*( (8 + name_len + 3)/4 ); // a multiple of 4
+      // All dir_entries rec_len = ideal_length, except the last entry. The
+      // rec_len of the LAST entry is to the end of the block, which may be
+      // larger than its ideal_length.
+      //(3). In order to enter a new entry of name with n_len, the needed length is
+      // // a multiple of 4
+      //(4). Step to the last entry in the data block:
+      get_block(pip->dev, pip->INODE.i_block[i], buf);
+      dp = (DIR *)buf;
+      cp = buf;
+      ideal_length = 4*( (8 + dp->name_len + 3)/4 );
+      need_length = 4*((8 +  strlen(name) + 3)/4);
+      int blk = pip->INODE.i_block[i];
+      printf("step to LAST entry in data block %d\n", blk);
+      while (cp + dp->rec_len < buf + BLKSIZE)
+      {
+         strncpy(temp, dp->name, dp->name_len);
+         temp[dp->name_len] = 0;
+         printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
+         //ideal_length = 4*( (8 + dp->name_len + 3)/4 );
+         cp += dp->rec_len;
+         dp = (DIR *)cp;
+         printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
+      }
+      // dp NOW points at last entry in block
+      printf("points at last entry in block\n");
+      int remain = dp->rec_len - ideal_length;
+      cp = (char*)dp;
+      if (remain >= need_length)
+      {
+         //enter the new entry as the LAST entry and
+         //trim the previous entry rec_len to its ideal_length;
+         //set rec_len to ideal
+         //move the new entry to the last entry
+          dp->rec_len = ideal_length;
+          cp += dp->rec_len;
+          dp = (DIR*)cp;
+
+          //sets the dirpointer inode to the given myino
+          dp->inode = ino;
+          dp->rec_len = BLKSIZE - ((u32)cp - (u32)buf);
+          printf("rec len is %d\n", dp->rec_len);
+          dp->name_len = strlen(name);
+          dp->file_type = EXT2_FT_DIR;
+          //sets the dp name to the given name
+          strcpy(dp->name, name);
+
+          //puts the block
+          put_block(dev, blk ,buf);
+         return 0;
+      }
+   }
 }
