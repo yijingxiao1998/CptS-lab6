@@ -178,8 +178,11 @@ int creat_file(char * pathname)
       dev = running->cwd->dev;
    }
    // 2. Let  pathname = a/b/c
-   parent = dirname(pathname);   //parent= "/a/b" OR "a/b"
-   child  = basename(pathname);  //child = "c"
+   char *temp1 = malloc(BLKSIZE), *temp2 = malloc(BLKSIZE);
+   strcpy(temp1, pathname);
+   strcpy(temp2, pathname);
+   parent=dirname(temp1);   //parent= "/a/b" OR "a/b"
+   child=basename(temp2);  //child = "c"
 
    //    WARNING: strtok(), dirname(), basename() destroy pathname
 

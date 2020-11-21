@@ -53,4 +53,11 @@ int readlink(char* file, char buf[256])
     // (1). get file’s INODE in memory; verify it’s a LNK file
     // (2). copy target filename from INODE.i_block[ ] into buffer;
     // (3). return file size;
+    int nino = getino(file);
+    MINODE* nmip = iget(dev, nino);
+    if(S_ISLNK(nmip->INODE.i_mode))
+    {
+        memcpy(buf, nmip->INODE.i_block, strlen(file));
+    }
+    return nmip->INODE.i_size;
 }
