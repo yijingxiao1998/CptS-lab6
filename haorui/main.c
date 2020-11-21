@@ -71,6 +71,7 @@ int mount_root()  // mount root file system
 char *disk = "diskimage";
 int main(int argc, char *argv[ ])
 {
+  char* readLinkBuf=malloc(BLKSIZE);
   int ino;
   char buf[BLKSIZE];
   char line[128], cmd[32], pathname[128], temp[128];
@@ -144,6 +145,10 @@ int main(int argc, char *argv[ ])
     	link(pathname, temp);
     if(strcmp(cmd, "unlink") == 0)
     	unlink(pathname);
+    if(strcmp(cmd, "symlink")==0)
+      symlink(pathname, temp);
+    if(strcmp(cmd, "readlink")==0)
+      readlink(pathname, readLinkBuf);
     if (strcmp(cmd, "quit")==0)
       quit();
   }

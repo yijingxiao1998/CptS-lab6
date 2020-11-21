@@ -36,15 +36,17 @@ int symlink(char* oldFile, char* newFile)
     int nino = getino(newFile);
     MINODE* nmip = iget(dev, nino);
     nmip->INODE.i_mode = 0XA000;
-    //     store old_file name in newfile’s INODE.i_block[ ] area.
+    //  store old_file name in newfile’s INODE.i_block[ ] area.
     memcpy(nmip->INODE.i_block, oldFile, strlen(oldFile));
     nmip->INODE.i_size = strlen(oldFile);
     nmip->dirty = 1;
     iput(nmip);
-    //     (4). mark new_file parent minode dirty;
-    //     iput(new_file’s parent minode);
-    omip->dirty = 1;
-    iput(omip);
+    // (4). mark new_file parent minode dirty;
+    //  iput(new_file’s parent minode);
+    int pino = getino(dirname(newFile));
+    MINODE* pmip = iget(dev, pino);
+    pmip->dirty = 1;
+    iput(pmip);
 }
 
 int readlink(char* file, char buf[256])
