@@ -33,6 +33,7 @@ MINODE *iget();
 #include "mkdir_creat.c"
 #include "alloc_dealloc.c"
 #include "link_unlink.c"
+#include "symlink_readlink.c"
 
 int init()
 {
