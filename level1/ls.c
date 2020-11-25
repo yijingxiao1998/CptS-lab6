@@ -99,7 +99,8 @@ int ls(char *pathname)
 
   if(pathname[0] != '\0')  // ls specific directory
   {
-  	getcwd(currentDir, BLKSIZE);  // get current dir
+  	//getcwd(currentDir, BLKSIZE);  // get current dir
+  	strcpy(currentDir, pwd(pathname));
   	chdir(pathname);  // get into this dir
   	ls_dir(running->cwd);  // ls this dir
   	chdir(currentDir);  // change back
