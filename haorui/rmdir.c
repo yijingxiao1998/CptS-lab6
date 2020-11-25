@@ -7,7 +7,7 @@ int rm_child(MINODE *parent, char *name)
 {
    int i, j, len = 0, pre = 0, t;
    char *cp, temp[256], sbuf[BLKSIZE], *cptemp;
-   DIR *dp, *dptemp;
+   DIR *dp, *dptemp, *preDir;
    //1. Search parent INODE's data block(s) for the entry of name
    for(i=0; i<12; i++)      // search DIR direct blocks only
    {
@@ -52,7 +52,7 @@ int rm_child(MINODE *parent, char *name)
   			cp -= pre;
   			dp = (DIR *)cp;
   			dp->rec_len = BLKSIZE - len;
-  			put_block(parent->dev, parent->INODE.i_block[i], sbuf);
+  			put_block(dev, parent->INODE.i_block[i], sbuf);
   		}
   		// entry is first but not the only entry or in the middle of block
   		else
@@ -145,7 +145,7 @@ int rmdir(char *pathname)
      	return -1;
   }
   // check minode is busy or not
-  if(mip->refCount >= 1)  
+  if(mip->refCount != 1)  
   {
      	printf("minode is busy\n");
      	iput(mip);
@@ -172,7 +172,7 @@ int rmdir(char *pathname)
   		{
   			if(strcmp(temp, "..") != 0)
   			{
-  				printf("dir is not empty\n");
+  				printf("1. dir is not empty\n");
   				iput(mip);
   				return -1;
   			}
@@ -188,13 +188,14 @@ int rmdir(char *pathname)
   }
   if(x>2)
   {
-  	printf("dir is not empty\n");
+  	printf("2. dir is not empty\n");
   	iput(mip);
   	return -1;
   }
 
   /*6. ASSUME passed the above checks.
      Deallocate its block and inode:*/
+	printf("Deallocate block\n");
   for (i=0; i<12; i++){
          if (mip->INODE.i_block[i]==0)
              continue;
@@ -209,6 +210,7 @@ int rmdir(char *pathname)
   MINODE *pmip = iget(mip->dev, pino);
 
   //8. remove child's entry from parent directory by
+  printf("Remove from parent\n");
   rm_child(pmip, pathname);
 
   //9. decrement pip's link_count by 1; 

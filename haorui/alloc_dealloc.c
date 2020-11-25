@@ -75,7 +75,7 @@ int idalloc(int dev, int ino)
 	if(ino > ninodes)  // niodes global
 	{
 		printf("inumber %d out of range\n", ino);
-		return;
+		return -1;
 	}
 	// get inode bitmap block
 	get_block(dev, imap, buf);
@@ -94,7 +94,7 @@ int bdalloc(int dev, int ib)
 	if(ib > nblocks)  // nblocks global
 	{
 		printf("inumber %d out of range\n", ib);
-		return;
+		return -1;
 	}
 	// get block bitmap block
 	get_block(dev, bmap, buf);

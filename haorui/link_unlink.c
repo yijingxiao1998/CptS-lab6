@@ -55,7 +55,7 @@ int unlink(char* fileName)
         else
         { // if links_count = 0: remove filename
             //deallocate all data blocks in INODE;
-            for(int i = 0; i < 15; i++)
+            for(int i = 0; i < 12; i++)
             {
                 bdalloc(dev, i);
             }

@@ -3,23 +3,8 @@ char *t1 = "xwrxwrxwr-------";
 char *t2 = "----------------";
 
 char *PWD[NMINODE];
-char *rpwd(MINODE *wd)
+int rpwd(MINODE *wd)
 {
-  MINODE *pip;
-  int parent_ino;
-  int ino, x = 0;
-  char *my_name = malloc(256);
-  DIR *dp;
-  char *cp;
-  char temp[256], buf[BLKSIZE];
-  
-  if(wd == root)
-  	return;
-  	
-  // get_block(dev, wd->INODE.i_block[0], buf);
-  // dp = (DIR *)buf;
-  // cp = buf;
-  
   // while(cp<buf+BLKSIZE && x<2)
   // {
   // 	strncpy(temp, dp->name, dp->name_len);
@@ -44,11 +29,53 @@ char *rpwd(MINODE *wd)
   // printf("/%s", my_name);
   // strcat(PWD, "/");
   // strcat(PWD, my_name);
-  parent_ino = findino(wd, &ino);
+  //parent_ino = findino(wd, &ino);
+  MINODE *pip;
+  int parent_ino, my_ino;
+  char my_name[256];
+  DIR *dp, *mip;
+  char *cp;
+  char temp[256], buf[BLKSIZE];
+  
+  if(wd == root)
+  	return 0;
+
+  my_ino = search(wd, ".");
+  parent_ino = search(wd, "..");
   pip = iget(dev, parent_ino);
-  findmyname(pip, ino, my_name);
+  get_block(fd, wd->INODE.i_block[0], buf);
+  dp = (DIR*)buf;
+  cp = buf;
+
+  while(cp<buf+BLKSIZE)
+  {
+    strncpy(my_name, dp->name, dp->name_len);
+    my_name[dp->name_len] = 0;
+    if(dp->inode == my_ino )
+    {
+      break;
+    }
+    // move to next dir
+    cp += dp->rec_len;
+    dp = (DIR*)cp;
+  }
+  
   rpwd(pip);
   printf("/%s", my_name);
+}
+
+int pwd(MINODE *wd)
+{
+  if (wd == root)
+  {	
+  	printf("CWD = /\n");
+    return 0;
+  }
+  else
+  {
+  	rpwd(wd);
+    printf("\n");
+  }
 }
 
 int chdir(char *pathname)   
@@ -90,24 +117,6 @@ int chdir(char *pathname)
   }
 }
 
-
-
-char *pwd(MINODE *wd)
-{
-  printf("Print cwd\n");
-  if (wd == root)
-  {	
-  	printf("CWD = /\n");
-  	//return "/";
-    return 0;
-  }
-  else
-  {
-  	printf("CWD = ");
-  	rpwd(wd);
-  	printf("\n");
-  }
-}
 
 int ls_file(MINODE *mip, char *name)
 {
@@ -183,7 +192,7 @@ int ls_dir(MINODE *mip)
      if(fmip)
      {
        ls_file(fmip, temp);
-       //iput(fmip);
+       iput(fmip);
      }
      cp += dp->rec_len;
      dp = (DIR *)cp;

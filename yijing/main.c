@@ -32,7 +32,7 @@ MINODE *iget();
 #include "cd_ls_pwd.c"
 #include "mkdir_creat.c"
 #include "alloc_dealloc.c"
-#include "link_unlink_symlink.c"
+#include "link_unlink.c"
 
 int init()
 {

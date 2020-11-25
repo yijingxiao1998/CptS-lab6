@@ -38,6 +38,7 @@ int symlink(char* oldFile, char* newFile)
     nmip->INODE.i_mode = 0XA000;
     //  store old_file name in newfile’s INODE.i_block[ ] area.
     memcpy(nmip->INODE.i_block, oldFile, strlen(oldFile));
+    //strcpy(nmip->INODE.i_block, oldFile);
     nmip->INODE.i_size = strlen(oldFile);
     nmip->dirty = 1;
     iput(nmip);
