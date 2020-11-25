@@ -105,13 +105,13 @@ int main(int argc, char *argv[ ])
        chdir(pathname);
     if (strcmp(cmd, "pwd")==0)
        pwd(running->cwd);
-    /*if(strcmp(cmd, "mkdir") == 0)
+    if(strcmp(cmd, "mkdir") == 0)
       make_dir(pathname);
     if(strcmp(cmd, "creat") == 0)
       creat_file(pathname);
     if(strcmp(cmd, "rmdir")==0)
       rmdir(pathname);
-    if(strcmp(cmd, "link") == 0)
+    /*if(strcmp(cmd, "link") == 0)
     {
     	link(pathname, temp);
     }

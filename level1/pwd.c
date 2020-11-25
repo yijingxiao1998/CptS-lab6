@@ -1,10 +1,10 @@
 char *pwdtemp[NMINODE];
 
-char *rpwd(MINODE *wd)
+char* rpwd(MINODE *wd)
 {
   MINODE *pip;
-  int parent_ino;
-  int ino, x = 0;
+  int parent_ino, x = 0;
+  u32 ino;
   char my_name[256];
   DIR *dp;
   char *cp;
@@ -49,7 +49,7 @@ char *rpwd(MINODE *wd)
   printf("/%s", my_name);*/
 }
 
-char *pwd(MINODE *wd)
+char* pwd(MINODE *wd)
 {
   strcpy(pwdtemp, "");
   if (wd == root)

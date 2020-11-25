@@ -27,11 +27,12 @@ int nblocks, ninodes, bmap, imap, inode_start;
 MINODE *iget();
 
 #include "util.c"
-//#include "rmdir.c"
+#include "rmdir.c"
+#include "pwd.c"
 #include "cd.c"
 #include "ls.c"
-#include "pwd.c"
 #include "quit.c"
-//#include "mkdir_creat.c"
-//#include "alloc_dealloc.c"
+#include "mkdir.c"
+#include "creat.c"
+#include "alloc_dealloc.c"
 //#include "link_unlink_symlink.c"
