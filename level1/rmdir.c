@@ -30,7 +30,7 @@ int rm_child(MINODE *parent, char *name)
   	   	
   	   	// 3. Write the parent's data block back to disk
   	   	put_block(parent->dev, parent->INODE.i_block[0], sbuf);
-     		
+     		return 0;
   	   }
   	   else
   	   {
