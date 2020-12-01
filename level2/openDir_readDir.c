@@ -1,6 +1,6 @@
-int opendir(pathaname)
+int opendir(char* pathname)
 {
-    return open(pathname, RD|O_DIR); 
+    return open(pathname, 0); 
 }
 
 int readdir(int fd, struct udir *udirp) // struct udir{DIR udir;};
