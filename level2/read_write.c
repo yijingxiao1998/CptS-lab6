@@ -152,7 +152,7 @@ void cp(char* src, char* dest)
     //         for WR, OR  if open fails due to no file yet, creat it and then open it
     //         for WR.
 
-    while( n=myread(fd, buf, BLKSIZE) )
+    while( n==myread(fd, buf, BLKSIZE) )
     {
         mywrite(gd, buf, n);  // notice the n in write()
     }
@@ -164,11 +164,17 @@ void cat(char* filename)
     int n;
 
     int fd = open(filename, 0);
-    while(n = read(fd, mybuf[1024], 1024))
+    while(n = myread(fd, mybuf, 1024))
     {
+        int i = 0;
         mybuf[n] = 0;             // as a null terminated string
-        printf("%s", mybuf);   //<=== THIS works but not good
-       //spit out chars from mybuf[ ] but handle \n properly;
+        //printf("%s", mybuf);   //<=== THIS works but not good
+        //spit out chars from mybuf[ ] but handle \n properly;
+        while(mybuf[i])
+        {
+            putchar(mybuf[i]);
+            i ++;
+        }
    } 
    close(fd);
 }
