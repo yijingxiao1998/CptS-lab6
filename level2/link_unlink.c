@@ -1,6 +1,5 @@
 // link-unlink
 
-
 // link
 int link(char* oldFile, char* newFile)
 {

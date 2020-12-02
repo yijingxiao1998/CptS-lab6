@@ -1,4 +1,3 @@
-
 int tst_bit(char *buf, int bit)
 {
   // in Chapter 11.8.1
