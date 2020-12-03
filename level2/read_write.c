@@ -6,7 +6,7 @@ int myread(int fd, char buf[], int nbytes)
     int count = 0, blk = 0;
     int avil = 0;
     char readbuf[BLKSIZE];
-    avil = fileSize - oftp->offset; // number of bytes still available in file.
+    int avil = fileSize - oftp->offset; // number of bytes still available in file.
     char *cq = buf;                // cq points at buf[ ]
     char ibuf[256];
 
@@ -159,9 +159,9 @@ int mywrite(int fd, char buf[ ], int nbytes)
 
 void cp(char* src, char* dest)
 {
-    int fd = open_file(src, 0);
+    int fd = open(src, 0);
 
-    int gd = open_file(dest,1); 
+    int gd = open(dest,1); 
     char buf[BLKSIZE];
     //    NOTE:In the project, you may have to creat the dst file first, then open it 
     //         for WR, OR  if open fails due to no file yet, creat it and then open it
@@ -178,21 +178,20 @@ void cat(char* filename)
     char mybuf[1024], dummy = 0;  // a null char at end of mybuf[ ]
     int n;
 
-    int fd = open_file(filename, 0);
-    printf("Open fd\n");
+    int fd = open(filename, 0);
     while(n = myread(fd, mybuf, 1024))
     {
-        // int i = 0;
+        int i = 0;
         mybuf[n] = 0;             // as a null terminated string
-        printf("%s", mybuf);   //<=== THIS works but not good
+        //printf("%s", mybuf);   //<=== THIS works but not good
         //spit out chars from mybuf[ ] but handle \n properly;
-        // while(mybuf[i])
-        // {
-        //     putchar(mybuf[i]);
-        //     i ++;
-        // }
+        while(mybuf[i])
+        {
+            putchar(mybuf[i]);
+            i ++;
+        }
    } 
-   close_file(fd);
+   close(fd);
 }
 
 void mv (char* src, char* dest)

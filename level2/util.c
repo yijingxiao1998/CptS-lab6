@@ -244,7 +244,7 @@ int findino(MINODE *mip, u32 *myino) // myino = ino of . return ino of ..
 int enter_name(MINODE *pip, int ino, char *name)
 {
    /****************** Algorithm of enter_name *******************/
-   printf("Entering enter_name\n");
+   printf("Entering enter_name: %s\n", name);
    char buf[BLKSIZE], *cp, temp[256];
    int ideal_length, need_length;
    
@@ -276,13 +276,12 @@ int enter_name(MINODE *pip, int ino, char *name)
       printf("step to LAST entry in data block %d\n", blk);
       while (cp + dp->rec_len < buf + BLKSIZE)
       {
-         strncpy(temp, dp->name, dp->name_len);
+         strcpy(temp, dp->name);
          temp[dp->name_len] = 0;
          printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
          //ideal_length = 4*( (8 + dp->name_len + 3)/4 );
          cp += dp->rec_len;
          dp = (DIR *)cp;
-         printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
       }
       // dp NOW points at last entry in block
       printf("points at last entry in block\n");
@@ -294,7 +293,7 @@ int enter_name(MINODE *pip, int ino, char *name)
          //trim the previous entry rec_len to its ideal_length;
          //set rec_len to ideal
          //move the new entry to the last entry
-          dp->rec_len = ideal_length;
+          dp->rec_len = 4*( (8 + dp->name_len + 3)/4 );
           cp += dp->rec_len;
           dp = (DIR*)cp;
 
