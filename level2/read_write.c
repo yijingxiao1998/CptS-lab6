@@ -95,6 +95,7 @@ int mywrite(int fd, char buf[ ], int nbytes)
                 bzero(mip->INODE.i_block[12], mip->dev);
             }
             // get i_block[12] into an int ibuf[256];
+            get_block(mip->dev, mip->INODE.i_block[12], (char*)ibuf);
             blk = ibuf[lbk - 12];
             if (blk==0)
             {
@@ -153,6 +154,7 @@ int mywrite(int fd, char buf[ ], int nbytes)
     }
 
     mip->dirty = 1;       // mark mip dirty for iput() 
+    iput(mip);
     printf("wrote %d char into file descriptor fd=%d\n", nbytes, fd);           
     return nbytes;
 }
@@ -167,8 +169,9 @@ void cp(char* src, char* dest)
     //         for WR, OR  if open fails due to no file yet, creat it and then open it
     //         for WR.
 
-    while( n==myread(fd, buf, BLKSIZE) )
+    while( n = myread(fd, buf, BLKSIZE) )
     {
+        printf("Writing:\n");
         mywrite(gd, buf, n);  // notice the n in write()
     }
 }
