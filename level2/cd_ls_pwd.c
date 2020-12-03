@@ -122,7 +122,7 @@ int ls_file(MINODE *mip, char *name)
 {
   // READ Chapter 11.7.3 HOW TO ls
   int i;
-  char ftime[64], l_name[128], buf[BLKSIZE];
+  char ftime[64], linkname[128], buf[BLKSIZE];
   INODE *ip = &mip->INODE;
   
   if((ip->i_mode & 0xF000) == 0x8000)  // if (S_ISREG())
@@ -132,10 +132,10 @@ int ls_file(MINODE *mip, char *name)
   if((ip->i_mode & 0xF000) == 0xA000)  // if (S_ISLNK())
   {
   	printf("%c", 'l');
-  	get_block(mip->dev, mip->INODE.i_block[0], buf);
-  	strcpy(l_name, buf);
+  	/*get_block(mip->dev, mip->INODE.i_block[0], buf);
+  	strcpy(linkname, buf);
   	put_block(mip->dev, mip->INODE.i_block[0], buf);
-  	l_name[strlen(l_name)] = 0;
+  	linkname[strlen(linkname)] = 0;*/
   }
   for(i = 8; i >= 0; i--)
   {
@@ -163,7 +163,10 @@ int ls_file(MINODE *mip, char *name)
   
   // print -> linkname if symbolic file
   if((ip->i_mode & 0xF000) == 0xA000)
-  	printf(" -> %s", l_name);
+  {
+  	if(readlink(name, linkname, 128) > 0)
+  		printf(" -> %s", linkname);
+  }
   //iput(mip);
   printf("\n");
 }

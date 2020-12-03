@@ -140,16 +140,18 @@ int search(MINODE *mip, char *name)
   	get_block(mip->dev, mip->INODE.i_block[i], sbuf);
   	dp = (DIR *)sbuf;
   	cp = sbuf;
-  	printf("i_number rec_len name_len  name\n");
+  	if(readlinkbuf == 0)
+  		printf("i_number rec_len name_len  name\n");
   	while(cp<sbuf + BLKSIZE)
   	{
   		strncpy(temp, dp->name, dp->name_len);
   		temp[dp->name_len] = 0;
-  		printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
+  		if(readlinkbuf ==0)
+  			printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
   		if(strcmp(name, temp) == 0)
   		{
-  			printf("found %s : inumber = %d\n", name, dp->inode);
-  			
+  			if(readlinkbuf ==0)
+  				printf("found %s : inumber = %d\n", name, dp->inode);
   			return dp->inode;
   		}
   		cp += dp->rec_len;

@@ -119,7 +119,7 @@ int main(int argc, char *argv[ ])
     if(strcmp(cmd, "symlink")==0)
     	symlink(pathname, temp);
     if(strcmp(cmd, "readlink")==0)
-      	readlink(pathname, readLinkBuf);
+      	readlink(pathname, readLinkBuf, BLKSIZE);
     if(strcmp(cmd, "stat") == 0)
     	stat_file(pathname);	
     if(strcmp(cmd, "open") == 0)

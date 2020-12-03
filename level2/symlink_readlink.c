@@ -36,31 +36,40 @@ int symlink(char* oldFile, char* newFile)
     int nino = getino(newFile);
     MINODE* nmip = iget(dev, nino);
     nmip->INODE.i_mode = 0XA000;
+    int pino = getino(dirname(newFile));
+    MINODE* pmip = iget(dev, pino);
+    
     //  store old_file name in newfile’s INODE.i_block[ ] area.
-    memcpy(nmip->INODE.i_block, oldFile, strlen(oldFile));
+    memcpy(nmip->INODE.i_block, oldFile, sizeof(oldFile));
     //strcpy(nmip->INODE.i_block, oldFile);
     nmip->INODE.i_size = strlen(oldFile);
     nmip->dirty = 1;
     iput(nmip);
     // (4). mark new_file parent minode dirty;
     //  iput(new_file’s parent minode);
-    int pino = getino(dirname(newFile));
-    MINODE* pmip = iget(dev, pino);
     pmip->dirty = 1;
     iput(pmip);
 }
 
-int readlink(char* file, char buf[256])
+int readlink(char* file, char buf[], int num)
 {
     /************* Algorithm of readlink (file, buffer) *************/
     // (1). get file’s INODE in memory; verify it’s a LNK file
     // (2). copy target filename from INODE.i_block[ ] into buffer;
     // (3). return file size;
+    readlinkbuf = 1;
+    
     int nino = getino(file);
+    if(nino == 0)
+    	return 0;
     MINODE* nmip = iget(dev, nino);
-    if(S_ISLNK(nmip->INODE.i_mode))
+    if(!S_ISLNK(nmip->INODE.i_mode))
     {
-        memcpy(buf, nmip->INODE.i_block, strlen(file));
+        printf("readlink failed: file is not a link type\n");
+        return -1;
     }
+    
+    memcpy(buf, nmip->INODE.i_block, sizeof(nmip->INODE.i_size)+1);
+
     return nmip->INODE.i_size;
 }

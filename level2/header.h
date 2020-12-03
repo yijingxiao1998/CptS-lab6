@@ -25,6 +25,7 @@ int   n;         // number of component strings
 int fd, dev;
 int nblocks, ninodes, bmap, imap, inode_start;
 int oft_index = 0;  // track which index for global oft
+int readlinkbuf = 0;   // for readlink
 
 MINODE *iget();
 
