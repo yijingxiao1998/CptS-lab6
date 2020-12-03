@@ -39,5 +39,5 @@ MINODE *iget();
 #include "misc.c"
 #include "symlink_readlink.c"
 #include "open_close_lseek.c"
-//#include "openDir_readDir.c"
-//#include "read_write.c"
+#include "openDir_readDir.c"
+#include "read_write.c"

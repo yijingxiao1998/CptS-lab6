@@ -6,10 +6,11 @@ int myread(int fd, char buf[], int nbytes)
     int count = 0, blk = 0;
     int avil = 0;
     char readbuf[BLKSIZE];
-    int avil = fileSize - oftp->offset; // number of bytes still available in file.
+    avil = fileSize - oftp->offset; // number of bytes still available in file.
     char *cq = buf;                // cq points at buf[ ]
     char ibuf[256];
 
+    printf("Reading file\n");
     while (nbytes && avil)
     {
        // Compute LOGICAL BLOCK number lbk and startByte in that block from offset;
@@ -121,7 +122,7 @@ int mywrite(int fd, char buf[ ], int nbytes)
             {
                 ibuf[block] = balloc(mip->dev);
                 bzero(ibuf[block], mip->dev);
-                put_block(mip->dev, mip->INODE.i_block[13], (char*)ibuf);
+                put_block(mip->dev, mip->INODE.i_block[13], (char*)(ibuf));
             }
             get_block(mip->dev, ibuf[block], (char*)ibuf2);
             if(ibuf2[offset] == 0)
@@ -161,9 +162,8 @@ int mywrite(int fd, char buf[ ], int nbytes)
 
 void cp(char* src, char* dest)
 {
-    int fd = open(src, 0);
-
-    int gd = open(dest,1); 
+    int fd = open_file(src, 0);
+    int gd = open_file(dest,1); 
     char buf[BLKSIZE];
     //    NOTE:In the project, you may have to creat the dst file first, then open it 
     //         for WR, OR  if open fails due to no file yet, creat it and then open it
@@ -171,7 +171,6 @@ void cp(char* src, char* dest)
 
     while( n = myread(fd, buf, BLKSIZE) )
     {
-        printf("Writing:\n");
         mywrite(gd, buf, n);  // notice the n in write()
     }
 }
@@ -179,11 +178,13 @@ void cp(char* src, char* dest)
 void cat(char* filename)
 {
     char mybuf[1024], dummy = 0;  // a null char at end of mybuf[ ]
-    int n;
+    //int n;
 
-    int fd = open(filename, 0);
-    while(n = myread(fd, mybuf, 1024))
+    int fd = open_file(filename, 0);
+    printf("Reading file\n");
+    while(n == myread(fd, mybuf, 1024))
     {
+        printf("Reading:\n");
         int i = 0;
         mybuf[n] = 0;             // as a null terminated string
         //printf("%s", mybuf);   //<=== THIS works but not good
@@ -194,7 +195,7 @@ void cat(char* filename)
             i ++;
         }
    } 
-   close(fd);
+   close_file(fd);
 }
 
 void mv (char* src, char* dest)
