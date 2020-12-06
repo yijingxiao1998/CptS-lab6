@@ -95,7 +95,7 @@ int mycreat(MINODE* pip, char* child)
    // (4).4. enter_child(pmip, ino, basename); which enters
    // (ino, basename) as a dir_entry to the parent INODE;
    enter_name(pip, ino, child);
-   return ino;
+   //return ino;
 }
 
 
@@ -116,7 +116,7 @@ int make_dir(char* pathname)
    else
    {
       printf("Relative pathname\n");
-      start == running ->cwd;
+      start = running ->cwd;
       dev = running->cwd->dev;
    }
    // 2. Let  pathname = a/b/c
@@ -163,7 +163,7 @@ int creat_file(char * pathname)
    // 0644 = rw-r--r--, and
    // (2). no data block is allocated for it, so the file size is 0.
    // (3). links_count = 1; Do not increment parent INODE’s links_count
-    MINODE *start,*pip;		   
+   MINODE *start,*pip;		   
    int pino;
    char * parent, *child;
    
@@ -178,8 +178,11 @@ int creat_file(char * pathname)
       dev = running->cwd->dev;
    }
    // 2. Let  pathname = a/b/c
-   parent = dirname(pathname);   //parent= "/a/b" OR "a/b"
-   child  = basename(pathname);  //child = "c"
+   char *temp1 = malloc(BLKSIZE), *temp2 = malloc(BLKSIZE);
+   strcpy(temp1, pathname);
+   strcpy(temp2, pathname);
+   parent=dirname(temp1);   //parent= "/a/b" OR "a/b"
+   child=basename(temp2);  //child = "c"
 
    //    WARNING: strtok(), dirname(), basename() destroy pathname
 
@@ -202,6 +205,7 @@ int creat_file(char * pathname)
       return -1;
    }
    
+   // mycreat(pip, child);
    //    touch its atime, i.e. atime = time(0L), mark it DIRTY
    pip->INODE.i_atime = time(0L);
    pip->dirty = 1;

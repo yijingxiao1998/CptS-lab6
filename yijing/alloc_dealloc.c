@@ -1,4 +1,3 @@
-
 int tst_bit(char *buf, int bit)
 {
   // in Chapter 11.8.1
@@ -23,7 +22,7 @@ int ialloc(int dev)  // allocate an inode number from inode_bitmap
     if (tst_bit(buf, i)==0){
         set_bit(buf, i);
         put_block(dev, imap, buf);
-        printf("allocated ino = %d\n", i+1); // bits count from 0; ino from 1
+        printf("allocated = %d\n", i+1); // bits count from 0; ino from 1
         return i+1;
     }
   }
@@ -42,7 +41,7 @@ int balloc(int dev) // returns a FREE disk block number
     if (tst_bit(buf, i)==0){
         set_bit(buf, i);
         put_block(dev, imap, buf);
-        printf("allocated ino = %d\n", i+1); // bits count from 0; ino from 1
+        printf("allocated = %d\n", i+1); // bits count from 0; ino from 1
         return i+1;
     }
   }
@@ -75,7 +74,7 @@ int idalloc(int dev, int ino)
 	if(ino > ninodes)  // niodes global
 	{
 		printf("inumber %d out of range\n", ino);
-		return;
+		return -1;
 	}
 	// get inode bitmap block
 	get_block(dev, imap, buf);
@@ -94,7 +93,7 @@ int bdalloc(int dev, int ib)
 	if(ib > nblocks)  // nblocks global
 	{
 		printf("inumber %d out of range\n", ib);
-		return;
+		return -1;
 	}
 	// get block bitmap block
 	get_block(dev, bmap, buf);

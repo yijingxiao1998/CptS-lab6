@@ -6,8 +6,12 @@ int nname = 0;    // number of token strings
 
 int get_block(int dev, int blk, char *buf)
 {
-   lseek(dev, (long)blk*BLKSIZE, 0);
-   n = read(dev, buf, BLKSIZE);
+   // lseek(fd, position, whence; whence=SEEK_SET or SEEK_CUR
+   lseek(dev, (long)blk*BLKSIZE, 0);  // (p 236) block blk or offset BLKSIZE
+   
+   // (p 346) int read(int fd, char *buf, int nbytes)
+   // read nbytes from an opened file descriptor into a buffer area in user space
+   n = read(dev, buf, BLKSIZE);  
    if(n<0)
    	printf("get_block [%d %d] error\n", dev, blk);
 }   
@@ -52,7 +56,12 @@ MINODE *mialloc()   // allocate a Free minode for use
   return 0;
 }
 
-// (p 323) This function returns a pointer to the in-memory minode containing the INODE of (dev, ino). The returnde minode is unique, i.e. only copy of the INODE exists in memory.
+int midalloc(MINODE *mip)  // release a used minode
+{
+  mip->refCount = 0;
+}
+
+// (p 323) This function returns a pointer to the in-memory minode containing the INODE of (dev, ino). The returned minode is unique, i.e. only copy of the INODE exists in memory.
 MINODE *iget(int dev, int ino)
 {
   MINODE *mip;
@@ -76,21 +85,18 @@ MINODE *iget(int dev, int ino)
   mip->dev = dev;  
   mip->ino = ino;      // assign to (dev, ino)
   block = (ino-1)/8 + inode_start;     // disk block containing this inode
-  offset = (ino-1)%8;             // which inode in this block
+  offset = (ino-1)%8;                  // which inode in this block
   get_block(dev, block, buf);
   ip = (INODE *)buf + offset;
-  mip->INODE = *ip;               // copy inode to minode.INODE
+  mip->INODE = *ip;                    // copy inode to minode.INODE
+  
   // initialize minode
   mip->refCount = 1;
   mip->mounted = 0;
   mip->dirty = 0;
   mip->mptr = 0;
+  
   return mip;
-}
-
-int midalloc(MINODE *mip)
-{
-  mip->refCount = 0;
 }
 
 // (p 324) THis function releases a used minode pointed by mip. Each minode has a refCount, which represents the number of users that are using the minode.
@@ -107,7 +113,7 @@ void iput(MINODE *mip)
   mip->refCount--;          // dec reFcount by 1
   if(mip->refCount > 0)     // still has user
   	return;
-  if(mip->dirty == 0)       // no need to write back
+  if(mip->dirty == 0)       // INODE has not changed, no need to write back
   	return;
   
   // write INODE back to disk
@@ -125,7 +131,7 @@ void iput(MINODE *mip)
 int search(MINODE *mip, char *name)
 {
   // search for name in (DIRECT) data blocks of mip->INODE
-  // return its ino
+  // if found, return its ino
   int i;
   char *cp, temp[256], sbuf[BLKSIZE];
   DIR *dp;
@@ -133,19 +139,21 @@ int search(MINODE *mip, char *name)
   {
   	if(mip->INODE.i_block[i] == 0)
   		return 0;
-  	get_block(mip->dev, mip->INODE.i_block[i], sbuf);
+  	get_block(mip->dev, mip->INODE.i_block[i], sbuf);  // get data block into subf
   	dp = (DIR *)sbuf;
   	cp = sbuf;
-  	printf("i_number rec_len name_len  name\n");
+  	if(readlinkbuf == 0)
+  		printf("i_number rec_len name_len  name\n");
   	while(cp<sbuf + BLKSIZE)
   	{
   		strncpy(temp, dp->name, dp->name_len);
-  		temp[dp->name_len] = 0;
-  		printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
+  		temp[dp->name_len] = 0;  // ensure NULL at end
+  		if(readlinkbuf ==0)
+  			printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
   		if(strcmp(name, temp) == 0)
   		{
-  			printf("found %s : inumber = %d\n", name, dp->inode);
-  			
+  			if(readlinkbuf ==0)
+  				printf("found %s : inumber = %d\n", name, dp->inode);
   			return dp->inode;
   		}
   		cp += dp->rec_len;
@@ -240,7 +248,7 @@ int findino(MINODE *mip, u32 *myino) // myino = ino of . return ino of ..
 int enter_name(MINODE *pip, int ino, char *name)
 {
    /****************** Algorithm of enter_name *******************/
-   printf("Entering enter_name\n");
+   printf("Entering enter_name: %s\n", name);
    char buf[BLKSIZE], *cp, temp[256];
    int ideal_length, need_length;
    
@@ -272,13 +280,13 @@ int enter_name(MINODE *pip, int ino, char *name)
       printf("step to LAST entry in data block %d\n", blk);
       while (cp + dp->rec_len < buf + BLKSIZE)
       {
-         strncpy(temp, dp->name, dp->name_len);
+         bzero(temp,256);
+         strcpy(temp, dp->name);
          temp[dp->name_len] = 0;
          printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
          //ideal_length = 4*( (8 + dp->name_len + 3)/4 );
          cp += dp->rec_len;
          dp = (DIR *)cp;
-         printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
       }
       // dp NOW points at last entry in block
       printf("points at last entry in block\n");
@@ -290,7 +298,7 @@ int enter_name(MINODE *pip, int ino, char *name)
          //trim the previous entry rec_len to its ideal_length;
          //set rec_len to ideal
          //move the new entry to the last entry
-          dp->rec_len = ideal_length;
+          dp->rec_len = 4*( (8 + dp->name_len + 3)/4 );
           cp += dp->rec_len;
           dp = (DIR*)cp;
 
@@ -308,4 +316,82 @@ int enter_name(MINODE *pip, int ino, char *name)
          return 0;
       }
    }
+}
+
+int truncate(MINODE *mip)
+{
+  int i, j;
+  int ibuf[256], dbuf[256];
+  
+  // 1. release mip->INODE's data blocks;
+  // a file may have 12 direct blocks, 256 indirect blocks and 256*256
+  for(i = 0; i < 12; i++)     // release direct blocks
+  {
+  	if(mip->INODE.i_block[i] == 0)
+  		continue;
+  	bdalloc(mip->dev, mip->INODE.i_block[i]);
+  }
+  // (p 305) Indirect blocks: i_block[12] points to disk block, which contains 256 block numbers, each points to a disk block
+  if(mip->INODE.i_block[12])  // release indirect blocks
+  {
+  	get_block(dev, mip->INODE.i_block[12], ibuf);
+  	for(i = 0; i < 256; i++)
+  	{
+  		if(ibuf[i])
+  			bdalloc(mip->dev, ibuf[i]);
+  	}
+  }
+  
+  // double indirect data blocks. release them all.
+  // (p 305) Double Indirect blocks: i_block[13] points to a block, which points to 256 blocks, each of which points to 256 disk blocks
+  if(mip->INODE.i_block[13])  // release double indirect blocks
+  {
+  	get_block(dev, mip->INODE.i_block[13], dbuf);
+  	for(i = 0; i < 256; i++)
+  	{
+  		if(dbuf[i])
+  		{	
+  			get_block(dev, mip->INODE.i_block[12], ibuf);
+  			for(j = 0; j < 256; j++)
+  			{
+  				if(ibuf[j])
+  					bdalloc(mip->dev, ibuf[j]);
+  			}
+  		}
+  	}
+  }
+  
+  // 2. update INODE's time field
+  mip->INODE.i_atime = mip->INODE.i_mtime = time(0L);
+
+  // 3. set INODE's size to 0 and mark Minode[ ] dirty
+  mip->INODE.i_size = 0;
+  mip->dirty = 1;
+}
+
+// This function displays the currently opened files to help the user know what files has been opened.
+int pfd()
+{
+  int i;
+  char *temp[16];
+  
+  for(i = 0; i < NFD; i++)  // loop for all open file descriptors
+  {
+  	if(running->fd[i])  // if file descriptor valid
+  	{
+  		if(running->fd[i]->mode == 0)
+  			strcat(temp, "READ");
+  		else if(running->fd[i]->mode == 1)
+  			strcat(temp, "WRITE");
+  		else if(running->fd[i]->mode == 2)
+  			strcat(temp, "RW");
+  		else if(running->fd[i]->mode == 3)
+  			strcat(temp, "APPEND");
+  			
+  		printf("\tfd \tmode \toffset \tINODE\n");
+  		printf("\t---- \t---- \t---- \t----\n");
+  		printf("\t%d \t%s \t%d \t[dev:%d, ino:%d]\n", i, temp, running->fd[i]->offset, running->fd[i]->mptr->dev, running->fd[i]->mptr->ino);
+  	}
+  }
+  printf("\t--------------------------------------\n");  
 }

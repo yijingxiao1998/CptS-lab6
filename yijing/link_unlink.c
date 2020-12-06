@@ -21,7 +21,9 @@ int link(char* oldFile, char* newFile)
         return 0;
     } 
     //(3). creat new_file with the same inode number of old_file:
-    char *parent = dirname(newFile); 
+    char *tempDir = malloc(256);
+    strcpy(tempDir, newFile);
+    char *parent = dirname(tempDir); 
     char *child = basename(newFile);
     int pino = getino(parent);
     MINODE* pmip = iget(dev, pino);
@@ -43,14 +45,6 @@ int unlink(char* fileName)
     //check it’s a REG or symbolic LNK file; can not be a DIR
     if(S_ISREG(mip->INODE.i_mode) || S_ISLNK(mip->INODE.i_mode))
     {
-        // remove name entry from parent DIR’s data block:
-        char *parent = dirname(fileName); 
-        char* child = basename(fileName);
-        int pino = getino(parent);
-        MINODE *pmip = iget(dev, pino);
-        rm_child(pmip,  child);
-        pmip->dirty = 1;
-        iput(pmip);
         // decrement INODE’s link_count by 1
         mip->INODE.i_links_count--;
         if (mip->INODE.i_links_count > 0)
@@ -61,20 +55,29 @@ int unlink(char* fileName)
         else
         { // if links_count = 0: remove filename
             //deallocate all data blocks in INODE;
-            for(int i = 0; i < 15; i++)
+            for(int i = 0; i < 12; i++)
             {
-                bdalloc(ino, i);
+                bdalloc(dev, i);
             }
             //deallocate INODE;
             idalloc(dev, ino);
         }
         iput(mip); // release mip
+
+        // remove name entry from parent DIR’s data block:
+        // char *tempFile = malloc(256);
+        // strcpy(tempFile, fileName);
+        char *parent = dirname(fileName);
+        char *child = basename(fileName);
+        int pino = getino(parent);
+        MINODE *pmip = iget(dev, pino);
+        rm_child(pmip,  child);
+        pmip->dirty = 1;
+        iput(pmip);
     }
     else if(S_ISDIR(mip->INODE.i_mode))
     {
         printf("ERROR! this is a DIR type file\n");
         return 0;
     }
-    
-    
 }
