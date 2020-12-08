@@ -112,7 +112,7 @@ int chdir(char *pathname)
   }
   else
   {
-    printf("cd %s\n", pathname);
+    	printf("cd %s\n", pathname);
   	ino = getino(pathname);
   	printf("dev=%d ino=%d\n", dev, ino);
   	if(ino == 0)
@@ -196,7 +196,7 @@ int ls_dir(MINODE *mip)
   char buf[BLKSIZE], temp[256];
   DIR *dp;
   char *cp;
-  MINODE *fmip;
+  //MINODE *fmip;
   
   // Assume DIR has only one data block i_block[0]
   get_block(dev, mip->INODE.i_block[0], buf); 
@@ -205,29 +205,33 @@ int ls_dir(MINODE *mip)
   
   while (cp < buf + BLKSIZE)
   {
+     //printf("cp = %d  buf+BLKSIZE = %d\n", cp, buf+BLKSIZE);
      strncpy(temp, dp->name, dp->name_len);
+     //printf("temp = %s buf = %s\n", temp, buf);
      temp[dp->name_len] = 0;
 	
      //printf("[%d %s]  ", dp->inode, temp); // print [inode# name]
      
-     fmip = iget(dev, dp->inode);
+     mip = iget(dev, dp->inode);
      //fmip->dirty = 0;
-     if(fmip)
+     if(mip)
      {
-       ls_file(fmip, temp);
-       iput(fmip);
+       ls_file(mip, temp);
+       iput(mip);
+       
      }
      cp += dp->rec_len;  // advance cp by entry_len
      dp = (DIR *)cp;     // pull dp to where cp points at
      // (p 65) with proper typecasting, the last two lines of C code can be simplified as:
      // dp = (DIR *)((char *)dp + dp->rlen);  which eliminates the need for a char *cp
   }
+  printf("cp = %d  buf+BLKSIZE = %d\n", cp, buf+BLKSIZE);
   printf("\n");
 }
 
 int ls(char *pathname)  
 {
-  u32 *ino = malloc(32);
+  //u32 *ino = malloc(32);
   char currentDir[NMINODE];
   //findino(running->cwd, ino);
 
