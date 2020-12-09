@@ -12,6 +12,7 @@
 // globals
 MINODE minode[NMINODE];
 MINODE *root;
+MTABLE mtable[NMTABLE];
 
 // An OS kernel usually defines a finite number of PROC structures in its data area to represent processes in the system
 // Global PROC pointer running to point at the PROC that is currently executing
@@ -43,3 +44,4 @@ MINODE *iget();
 //#include "read_write.c"
 #include "read_cat.c"
 #include "write_cp.c"
+#include "mount_umount.c"

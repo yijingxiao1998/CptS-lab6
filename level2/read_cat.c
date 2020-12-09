@@ -55,7 +55,7 @@ int myread(int fd, char *buf, int nbytes)
    return count;   // count is the actual number of bytes read
 }
 
-int read_file()
+int read_file(int fd, int nBytes)
 {
    char temp[BLKSIZE];
    int count;
@@ -69,8 +69,8 @@ int read_file()
     	printf("file is not for RD or RW\n");
     	return -1;
    }
-    	
-   count = myread(fd, temp, BLKSIZE);
+    
+   count = myread(fd, temp, nBytes);
    printf("myread: read %d char from file descriptor fd=%d\n", count, fd); 
    printf("read done\n"); 
    

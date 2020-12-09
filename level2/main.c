@@ -140,7 +140,7 @@ int main(int argc, char *argv[ ])
     if(strcmp(cmd, "close") == 0)
     	close_file(fd);
     if(strcmp(cmd, "read") == 0)
-    	read_file();
+    	read_file(atoi(pathname), atoi(temp));
     if(strcmp(cmd, "write") == 0)
     	write_file();
     if(strcmp(cmd, "cat") == 0)

@@ -53,7 +53,8 @@ int unlink(char* fileName)
             mip->dirty = 1; 
         }
         else
-        { // if links_count = 0: remove filename
+        { 
+            // if links_count = 0: remove filename
             //deallocate all data blocks in INODE;
             for(int i = 0; i < 12; i++)
             {

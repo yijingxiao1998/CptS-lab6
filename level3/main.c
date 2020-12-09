@@ -103,6 +103,7 @@ int main(int argc, char *argv[ ])
        continue;
     pathname[0] = 0;
 
+    bzero(temp, 128);
     sscanf(line, "%s %s %s", cmd, pathname, temp);
     printf("cmd=%s pathname=%s %s\n", cmd, pathname, temp);
   
@@ -148,6 +149,11 @@ int main(int argc, char *argv[ ])
     	cp(pathname, temp);
     if(strcmp(cmd, "pfd") == 0)
     	pfd();	
+    if(strcmp(cmd, "mount") == 0)
+    	//mount_file();
+      mount(pathname, temp);
+    if(strcmp(cmd, "umount") == 0)
+    	umount(pathname);
 
     if (strcmp(cmd, "quit")==0)
        quit();

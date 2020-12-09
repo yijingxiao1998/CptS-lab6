@@ -26,6 +26,8 @@ int mymkdir(MINODE* pip, char* child)
    // (4).3. make data block 0 of INODE to contain . and .. entries;
    char buf[BLKSIZE];
    bzero(buf, BLKSIZE); // optional: clear buf[ ] to 0
+   
+   get_block(dev, blk, buf);
    DIR *dp = (DIR *)buf;
    // make . entry
    dp->inode = ino;
@@ -60,11 +62,11 @@ int mycreat(MINODE* pip, char* child)
    MINODE* mip = iget(dev, ino); // load INODE into a minode
    //initialize mip->INODE as a DIR INODE;
    INODE *ip = &mip->INODE;
-   ip->i_mode = 0x81A4;		// OR 040755: DIR type and permissions
+   ip->i_mode = 0x81A4;		// file type and permissions
    ip->i_uid  = running->uid;	// Owner uid 
    ip->i_gid  = running->gid;	// Group Id
    ip->i_size = 0;		// Size in bytes 
-   ip->i_links_count = 1;	        // Links count=2 because of . and ..
+   ip->i_links_count = 1;	        // Links count=1 because of . 
    ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);  // set to current time
    ip->i_blocks = 2;                	// LINUX: Blocks count in 512-byte chunks 
    ip->i_block[0] = blk;
@@ -136,17 +138,19 @@ int make_dir(char* pathname)
    //    Verify : (1). parent INODE is a DIR (HOW?)   AND
    //             (2). child does NOT exists in the parent directory (HOW?);
 
-   if(S_ISDIR(pip->INODE.i_mode)&&search(pip, child)==0)
+   if(!S_ISDIR(pip->INODE.i_mode))
    {
-      printf("Ready to add dir\n");
-      mymkdir(pip, child);
-   }
-   else
-   {
-      printf("ERROR! it's already existed or parent is not a dir type\n");
+      printf("mkdir failed: parent is not a dir\n");
       return -1;
    }
-   
+   if(search(pip, child) != 0)
+   {
+      printf("mkdir failed: child exists in parent fir\n");
+      return -1;
+   }
+
+   printf("Ready to add dir\n");
+   mymkdir(pip, child);
    
    // 5. inc parent inodes's links count by 1; 
    //    touch its atime, i.e. atime = time(0L), mark it DIRTY

@@ -27,7 +27,7 @@ int symlink(char* oldFile, char* newFile)
         printf("ERROR! File already exists\n");
         return -1;
     }
-    //     (3). // assume length of old_file name <= 60 chars
+    //     (3). assume length of old_file name <= 60 chars
     //     store old_file name in newfile’s INODE.i_block[ ] area.
     //     set file size to length of old_file name
     //     mark new_file’s minode dirty;

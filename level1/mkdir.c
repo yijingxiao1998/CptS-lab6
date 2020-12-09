@@ -38,7 +38,7 @@ int mymkdir(MINODE* pip, char* child)
    dp->rec_len = BLKSIZE-12; // rec_len spans block
    dp->name_len = 2;
    dp->name[0] = dp->name[1] = '.';
-   put_block(dev, blk, buf); // write to blk on diks
+   put_block(dev, blk, buf); // write to blk on disks
    // write to disk block blk.
    // (4).4. enter_child(pmip, ino, basename); which enters
    // (ino, basename) as a dir_entry to the parent INODE;

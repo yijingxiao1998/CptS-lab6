@@ -172,9 +172,9 @@ int getino(char *pathname)
   if(strcmp(pathname, "/") == 0)
   	return 2;             // return root ino=2
   if(pathname[0] == '/')
-  	mip = root;           // if absolute pathname: start from root
+  	mip = root; //iget(dev, 2);           // if absolute pathname: start from root
   else
-  	mip = running->cwd;    // if relative pathname: start from CWD
+  	mip = running->cwd; //iget(running->cwd->dev, running->cwd->ino);    // if relative pathname: start from CWD
   mip->refCount++;            // in order to iput(mip) later
 
   tokenize(pathname);              // assume: name[], nname are globals
@@ -250,17 +250,16 @@ int enter_name(MINODE *pip, int ino, char *name)
    /****************** Algorithm of enter_name *******************/
    printf("Entering enter_name: %s\n", name);
    char buf[BLKSIZE], *cp, temp[256];
-   int ideal_length, need_length;
-   
-   for(int i =0; i<12; i++) 
+   DIR *dp;
+   int ideal_length, need_length = 4*( (8 + strlen(name) + 3)/4);
+   int blk, i;
+ 
+   for(i=0; i<12; i++) 
    {
      printf("Cur block#:%d\n", i);
      //each data block of parent DIR do // assume: only 12 direct blocks
       if (pip->INODE.i_block[i]==0)
-      {
-        printf("ERROR! empty block\n");
-        return -1; 
-      }
+	      break;
       // to step (5) below
       //(1). Get parent’s data block into a buf[ ];
       // (2). In a data block of the parent directory, each dir_entry has an ideal length
@@ -274,48 +273,65 @@ int enter_name(MINODE *pip, int ino, char *name)
       get_block(pip->dev, pip->INODE.i_block[i], buf);
       dp = (DIR *)buf;
       cp = buf;
-      ideal_length = 4*( (8 + dp->name_len + 3)/4 );
-      need_length = 4*((8 +  strlen(name) + 3)/4);
-      int blk = pip->INODE.i_block[i];
+      
+      //need_length = 4*((8 +  strlen(name) + 3)/4);
+      blk = pip->INODE.i_block[i];
       printf("step to LAST entry in data block %d\n", blk);
       while (cp + dp->rec_len < buf + BLKSIZE)
       {
          bzero(temp,256);
-         strcpy(temp, dp->name);
+         strncpy(temp, dp->name, dp->name_len);
          temp[dp->name_len] = 0;
          printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
-         //ideal_length = 4*( (8 + dp->name_len + 3)/4 );
+         
          cp += dp->rec_len;
          dp = (DIR *)cp;
+         ideal_length = 4*( (8 + dp->name_len + 3)/4 );
       }
       // dp NOW points at last entry in block
       printf("points at last entry in block\n");
       int remain = dp->rec_len - ideal_length;
-      cp = (char*)dp;
+      printf("remain=%d, nl=%d\n", remain, need_length);
+      //cp = (char*)dp;
       if (remain >= need_length)
       {
          //enter the new entry as the LAST entry and
          //trim the previous entry rec_len to its ideal_length;
          //set rec_len to ideal
          //move the new entry to the last entry
-          dp->rec_len = 4*( (8 + dp->name_len + 3)/4 );
+          dp->rec_len = ideal_length; //4*( (8 + dp->name_len + 3)/4 );
           cp += dp->rec_len;
           dp = (DIR*)cp;
 
           //sets the dirpointer inode to the given myino
           dp->inode = ino;
-          dp->rec_len = BLKSIZE - ((u32)cp - (u32)buf);
+          dp->rec_len = remain; //BLKSIZE - ((u32)cp - (u32)buf);
           printf("rec len is %d\n", dp->rec_len);
           dp->name_len = strlen(name);
-          dp->file_type = EXT2_FT_DIR;
+          //dp->file_type = EXT2_FT_DIR;
           //sets the dp name to the given name
           strcpy(dp->name, name);
 
           //puts the block
-          put_block(dev, blk ,buf);
+          put_block(pip->dev, blk ,buf);
          return 0;
       }
    }
+   // not enough space on existing block ( allocate new block and attach to parent)
+   blk = balloc(dev);
+   pip->INODE.i_block[i] = blk;
+   pip->INODE.i_size += BLKSIZE;
+   pip->dirty = 1;
+   
+   // new block exists now
+   get_block(dev, blk, buf);
+   dp = (DIR *)buf;
+   strcpy(dp->name, name);
+   dp->rec_len = BLKSIZE;
+   dp->inode = ino;
+   dp->name_len = strlen(name);
+   
+   put_block(pip->dev, blk, buf);
 }
 
 int truncate(MINODE *mip)

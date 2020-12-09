@@ -25,6 +25,7 @@ int mywrite(int fd, char buf[ ], int nbytes)
      else if (lbk >= 12 && lbk < 256 + 12)  // INDIRECT blocks 
      { 
          // HELP INFO:
+         printf("Enter indirect blocks\n");
          if (mip->INODE.i_block[12] == 0)
          {
             // allocate a block for it;
@@ -51,6 +52,7 @@ int mywrite(int fd, char buf[ ], int nbytes)
       else
      {
          // double indirect blocks
+         printf("Enter double indirect blocks\n");
          if(mip->INODE.i_block[13] == 0)  
          {
             // allocate a block for it;
@@ -101,39 +103,45 @@ int mywrite(int fd, char buf[ ], int nbytes)
      char *cp = wbuf + startByte;      // cp points at startByte in wbuf[]
      int remain = BLKSIZE - startByte;     // number of BYTEs remain in this block
 
-     if(nbytes > remain)
-     {
-        strncpy(cp, cq, remain);
-        nbytes -= remain;
-        running->fd[fd]->offset += remain;
-        if(running->fd[fd]->offset > mip->INODE.i_size)
-         {
-            mip->INODE.i_size += remain;
-         }
-         remain -= remain;
-     }
-     else
-     {
-        strncpy(cp, cq, nbytes);
-        remain -= nbytes;
-        running->fd[fd]->offset += nbytes;
-        if(running->fd[fd]->offset > mip->INODE.i_size)
-         {
-            mip->INODE.i_size += nbytes;
-         }
-         nbytes -= nbytes;
-     }
-     
-   //   	nbytes = remain;
-   //   while (remain > 0){               // write as much as remain allows  
-   //         *cp++ = *cq++;              // cq points at buf[ ]
-   //         nbytes--; remain--;         // dec counts
-   //         oftp->offset++;             // advance offset
-   //         if (oftp->offset > mip->INODE.i_size)  // especially for RW|APPEND mode
-   //             mip->INODE.i_size++;    // inc file size (if offset > fileSize)
-   //         if (nbytes <= 0) break;     // if already nbytes, break
+   //   if(nbytes > remain)
+   //   {
+   //      strncpy(cp, cq, remain);
+   //      nbytes -= remain;
+   //      running->fd[fd]->offset += remain;
+   //      if(running->fd[fd]->offset > mip->INODE.i_size)
+   //       {
+   //          mip->INODE.i_size += remain;
+   //       }
+   //       remain -= remain;
    //   }
-     put_block(mip->dev, blk, wbuf);   // write wbuf[ ] to disk
+   //   else
+   //   {
+   //      strncpy(cp, cq, nbytes);
+   //      remain -= nbytes;
+   //      running->fd[fd]->offset += nbytes;
+   //      if(running->fd[fd]->offset > mip->INODE.i_size)
+   //       {
+   //          mip->INODE.i_size += nbytes;
+   //       }
+   //       nbytes -= nbytes;
+   //   }
+     
+   // if(nbytes > remain)
+   // {
+   //    nbytes = remain;
+   // }
+   while (remain > 0)
+   {               
+      // write as much as remain allows  
+      *cp++ = *cq++;              // cq points at buf[ ]
+      nbytes--; remain--;         // dec counts
+      oftp->offset++;             // advance offset
+      if (oftp->offset > mip->INODE.i_size)  // especially for RW|APPEND mode
+         mip->INODE.i_size++;    // inc file size (if offset > fileSize)
+      if (nbytes <= 0) break;     // if already nbytes, break
+   }
+     	
+   put_block(mip->dev, blk, wbuf);   // write wbuf[ ] to disk
      
      // loop back to outer while to write more .... until nbytes are written
   }
@@ -183,6 +191,7 @@ void cp(char* src, char* dest)
     {
        if(creat_file(dest)<=0)
        {
+          printf("Create failed\n");
           close_file(fd);
        }
        gd = open_file(dest, 1);
