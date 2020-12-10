@@ -30,6 +30,10 @@ int readlinkbuf = 0;   // for readlink
 
 MINODE *iget();
 
+char *disk = "disk3.1";   // default device
+// char *disk = "disk1";
+//char *disk = "diskimage";
+
 #include "util.c"
 #include "rmdir.c"
 #include "cd_ls_pwd.c"

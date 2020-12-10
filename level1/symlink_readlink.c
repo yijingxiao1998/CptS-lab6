@@ -12,16 +12,16 @@ int symlink(char* oldFile, char* newFile)
 //     (4). mark new_file parent minode dirty;
 //     iput(new_file’s parent minode);
     // verify old_file exists and is not a DIR;
-    int oino = getino(oldFile, &dev);
+    int oino = getino(oldFile);
     MINODE* omip = iget(dev, oino);
     //check omip->INODE file type (must not be DIR).
-    if(oino == 0)
+    if(getino(oldFile) == 0)
     {
         printf("ERROR! old file doesn't exist\n");
         return -1;
     }
     // new_file must not exist yet:
-    if(getino(newFile, &dev) !=0)
+    if(getino(newFile) !=0)
     {
         //must return 0;
         printf("ERROR! File already exists\n");
@@ -33,10 +33,10 @@ int symlink(char* oldFile, char* newFile)
     //     mark new_file’s minode dirty;
     //     iput(new_file’s minode);
     creat_file(newFile);
-    int nino = getino(newFile, &dev);
+    int nino = getino(newFile);
     MINODE* nmip = iget(dev, nino);
     nmip->INODE.i_mode = 0XA000;
-    int pino = getino(dirname(newFile), &dev);
+    int pino = getino(dirname(newFile));
     MINODE* pmip = iget(dev, pino);
     
     //  store old_file name in newfile’s INODE.i_block[ ] area.
@@ -59,7 +59,7 @@ int readlink(char* file, char buf[], int num)
     // (3). return file size;
     readlinkbuf = 1;
     
-    int nino = getino(file, &dev);
+    int nino = getino(file);
     if(nino == 0)
     	return 0;
     MINODE* nmip = iget(dev, nino);

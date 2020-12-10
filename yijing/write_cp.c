@@ -62,7 +62,8 @@ int mywrite(int fd, char buf[ ], int nbytes)
             }
             
             // double indirenct block -> i_block[13]
-            get_block(mip->dev, mip->INODE.i_block[13], ibuf);
+            get_block(mip->dev, mip->INODE.i_block[13], wbuf);
+            get_block(mip->dev, wbuf+((lbk-(12+256))/256), wbuf);
             /*if(ibuf[(lbk-(12+256))/256] == 0)
             {
             	// allocate a block for it;
@@ -73,26 +74,49 @@ int mywrite(int fd, char buf[ ], int nbytes)
             		wbuf[i] = 0;
             	put_block(mip->dev, ibuf[(lbk-(12+256))/256], wbuf);
             }
-            
-            get_block(mip->dev, ibuf[(lbk-(12+256))/256], ibuf);
-            if(ibuf[(lbk-(12+256))%256] == 0)
+            put_block(dev, mip->INODE.i_block[13], ibuf);
+            get_block(dev, ibuf[(lbk-(12+256))/256], mbuf);
+            if(mbuf[(lbk-(12+256))%256] == 0)
             {
             	// allocate a block for it;
-            	ibuf[(lbk-(12+256))%256] = balloc(mip->dev);
+            	mbuf[(lbk-(12+256))%256] = balloc(mip->dev);
             	  
-            }
-            blk = ibuf[(lbk-(12+256)) % 256];	
-            put_block(mip->dev, ibuf[(lbk-(12+256))/256], ibuf);*/
-            get_block(mip->dev, ibuf+((lbk-(12+256))/256), ibuf);
-            blk = ibuf + (lbk-(12+256))%256;
+            }*/
+            blk = wbuf[(lbk-(12+256)) % 256];	
+            //put_block(dev, ibuf[(lbk-(12+256))/256], mbuf);
+            //get_block(mip->dev, ibuf+((lbk-(12+256))/256), ibuf);
+            //blk = ibuf + (lbk-(12+256))%256;
      }
 
      /* all cases come to here : write to the data block */
      get_block(mip->dev, blk, wbuf);   // read disk block into wbuf[ ]  
      char *cp = wbuf + startByte;      // cp points at startByte in wbuf[]
      int remain = BLKSIZE - startByte;     // number of BYTEs remain in this block
-
-     if(nbytes > remain)
+     
+     if(remain > 0)
+     {
+     	if(nbytes >= remain)
+     	{
+     	   memcpy(cp, cq, remain);
+     	   nbytes -= remain;
+     	   oftp->offset += remain;
+     	   remain = 0;
+     	   
+     	   if (oftp->offset > mip->INODE.i_size)  // especially for RW|APPEND mode
+               mip->INODE.i_size = oftp->offset;
+     	}
+     	else
+     	{
+     	   memcpy(cp, cq, nbytes);
+     	   remain -= nbytes;
+     	   oftp->offset += nbytes;
+     	   nbytes = 0;
+     	   
+     	   if (oftp->offset > mip->INODE.i_size)  // especially for RW|APPEND mode
+               mip->INODE.i_size = oftp->offset;
+     	}
+     }
+     /*if(nbytes > remain)
      	nbytes = remain;
      while (remain > 0){               // write as much as remain allows  
            *cp++ = *cq++;              // cq points at buf[ ]
@@ -101,7 +125,7 @@ int mywrite(int fd, char buf[ ], int nbytes)
            if (oftp->offset > mip->INODE.i_size)  // especially for RW|APPEND mode
                mip->INODE.i_size++;    // inc file size (if offset > fileSize)
            if (nbytes <= 0) break;     // if already nbytes, break
-     }
+     }*/
      put_block(mip->dev, blk, wbuf);   // write wbuf[ ] to disk
      
      // loop back to outer while to write more .... until nbytes are written

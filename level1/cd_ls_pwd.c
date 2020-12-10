@@ -114,7 +114,7 @@ int chdir(char *pathname)
   else
   {
     	printf("cd %s\n", pathname);
-  	ino = getino(pathname, &dev);
+  	ino = getino(pathname);
   	printf("dev=%d ino=%d\n", dev, ino);
   	if(ino == 0)
     	{
@@ -165,10 +165,7 @@ int ls_file(MINODE *mip, char *name)
   		printf("%c", t2[i]);   
   }
   //(p 304)
-  printf("%4d ", ip->i_links_count);     // hard-link count
-  printf("%4d ", ip->i_gid);              // group ID
-  printf("%4d ", ip->i_uid);              // owner uid
-  printf("%8d ", ip->i_size);             // file size in bytes
+  printf("%4d%4d%4d%8d ", ip->i_links_count, ip->i_gid, ip->i_uid, ip->i_size);
   
   // print time
   if(ctime(&ip->i_mtime))  // pass & of time field prints i_atime in calendar form

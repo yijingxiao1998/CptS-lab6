@@ -5,13 +5,8 @@
 int link(char* oldFile, char* newFile)
 {
     // verify old_file exists and is not a DIR;
-    int oino = getino(oldFile, &dev);
+    int oino = getino(oldFile);
     MINODE* omip = iget(dev, oino);
-    if(oino == 0)
-    {
-    	printf("oldfile %s does not exist\n", oldFile);
-    	return 0;
-    }
     //check omip->INODE file type (must not be DIR).
     if(S_ISDIR(omip->INODE.i_mode))
     {
@@ -19,7 +14,7 @@ int link(char* oldFile, char* newFile)
         return 0;
     }
     // new_file must not exist yet:
-    if(getino(newFile, &dev)!=0)
+    if(getino(newFile)!=0)
     {
         //must return 0;
         printf("ERROR! File already exists\n");
@@ -30,7 +25,7 @@ int link(char* oldFile, char* newFile)
     strcpy(tempDir, newFile);
     char *parent = dirname(tempDir); 
     char *child = basename(newFile);
-    int pino = getino(parent, &dev);
+    int pino = getino(parent);
     MINODE* pmip = iget(dev, pino);
     // creat entry in new parent DIR with same inode number of old_file
     enter_name(pmip, oino, child);
@@ -39,19 +34,15 @@ int link(char* oldFile, char* newFile)
     omip->dirty = 1; // for write back by iput(omip)
     iput(omip);
     iput(pmip);
+    printf("link done\n");
 }
 
 // unlink
 int unlink(char* fileName)
 {
     //(1). get filenmae’s minode:
-    int ino = getino(fileName, &dev);
+    int ino = getino(fileName);
     MINODE *mip = iget(dev, ino);
-    if(ino == 0)
-    {
-    	printf("file %s does not exist\n", fileName);
-    	return 0;
-    }
     //check it’s a REG or symbolic LNK file; can not be a DIR
     if(S_ISREG(mip->INODE.i_mode) || S_ISLNK(mip->INODE.i_mode))
     {
@@ -79,7 +70,7 @@ int unlink(char* fileName)
         // strcpy(tempFile, fileName);
         char *parent = dirname(fileName);
         char *child = basename(fileName);
-        int pino = getino(parent, &dev);
+        int pino = getino(parent);
         MINODE *pmip = iget(dev, pino);
         rm_child(pmip,  child);
         pmip->dirty = 1;

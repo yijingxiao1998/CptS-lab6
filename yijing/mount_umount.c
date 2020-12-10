@@ -67,7 +67,7 @@ int mount(char *filesys, char * mount_point)   /*  Usage: mount filesys mount_po
 
    // 4. For mount_point: find its ino, then get its minode:
    // call  ino  = getino(pathname);  to get ino:
-   ino = getino(mount_point);
+   ino = getino(mount_point, &dev);
    if(ino == 0)
    {
    	printf("mount failed: mount point %s does not exist\n", mount_point);
@@ -80,12 +80,14 @@ int mount(char *filesys, char * mount_point)   /*  Usage: mount filesys mount_po
    if(!S_ISDIR(mip->INODE.i_mode))
    {
    	printf("mount failed: %s is not a dir\n", mount_point);
+   	iput(mip);
    	return -1;
    }
    // Check mount_point is NOT busy (e.g. can't be someone's CWD)
    if(mip->refCount > 1)
    {
    	printf("mount failed: %s is busy\n", mount_point);
+   	iput(mip);
    	return -1;
    }
 
@@ -120,6 +122,7 @@ int mount_file()
    printf("mount point:");
    fgets(mount_point, BLKSIZE, stdin);
    mount_point[strlen(mount_point)-1] = 0;
+   printf("filesys = %s, mount point = %s\n", filesys, mount_point);
    
    mount(filesys, mount_point);
 } 

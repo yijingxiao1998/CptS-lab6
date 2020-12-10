@@ -14,6 +14,7 @@ int mymkdir(MINODE* pip, char* child)
    ip->i_size = BLKSIZE;		// Size in bytes 
    ip->i_links_count = 2;	        // Links count=2 because of . and ..
    ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);  // set to current time
+   printf("%s ", ctime(&ip->i_mtime));
    ip->i_blocks = 2;                	// LINUX: Blocks count in 512-byte chunks 
    ip->i_block[0] = blk;
    for(int i = 1; i<15; i++)
@@ -69,8 +70,8 @@ int mycreat(MINODE* pip, char* child)
    ip->i_size = 0;		// Size in bytes 
    ip->i_links_count = 1;	        // Links count=1 because of . 
    ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L);  // set to current time
-   ip->i_blocks = 0;                	// LINUX: Blocks count in 512-byte chunks 
-   ip->i_block[0] = 0;                // file no block
+   ip->i_blocks = 2;                	// LINUX: Blocks count in 512-byte chunks 
+   ip->i_block[0] = blk;
    for(int i = 1; i<15; i++)
    {
       ip->i_block[i] = 0;
@@ -134,7 +135,7 @@ int make_dir(char* pathname)
 
    // 3. Get minode of parent:
 
-   pino  = getino(parent, &dev);
+   pino  = getino(parent);
    pip   = iget(dev, pino);
 
    //    Verify : (1). parent INODE is a DIR (HOW?)   AND
@@ -143,17 +144,15 @@ int make_dir(char* pathname)
    if(!S_ISDIR(pip->INODE.i_mode))
    {
       printf("mkdir failed: parent is not a dir\n");
-      iput(pip);
       return -1;
    }
    if(search(pip, child) != 0)
    {
       printf("mkdir failed: child exists in parent fir\n");
-      iput(pip);
       return -1;
    }
 
-   printf("Ready to make dir\n");
+   printf("Ready to add dir\n");
    mymkdir(pip, child);
    
    // 5. inc parent inodes's links count by 1; 
@@ -196,7 +195,7 @@ int creat_file(char * pathname)
 
    // 3. Get minode of parent:
 
-   pino  = getino(parent, &dev);
+   pino  = getino(parent);
    pip   = iget(dev, pino);
 
    //    Verify : (1). parent INODE is a DIR (HOW?)   AND

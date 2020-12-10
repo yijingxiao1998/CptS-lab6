@@ -10,6 +10,20 @@ int set_bit(char *buf, int bit)
   buf[bit/8] |= (1 << (bit % 8));
 }
 
+int decFreeInodes(int dev)  // (p 333)
+{
+   char buf[BLKSIZE];
+   
+   // dec free inodes count in SUPER and GD
+   get_block(dev, 1, buf);
+   sp = (SUPER *)buf;
+   sp->s_free_inodes_count--;
+   put_block(dev, 1, buf);
+   get_block(dev, 2, buf);
+   gp = (GD *)buf;
+   gp->bg_free_inodes_count--;
+   put_block(dev, 2, buf);
+}
 int ialloc(int dev)  // allocate an inode number from inode_bitmap
 {
   int  i;
@@ -21,6 +35,7 @@ int ialloc(int dev)  // allocate an inode number from inode_bitmap
   for (i=0; i < ninodes; i++){
     if (tst_bit(buf, i)==0){
         set_bit(buf, i);
+        decFreeInodes(dev);
         put_block(dev, imap, buf);
         printf("allocated = %d\n", i+1); // bits count from 0; ino from 1
         return i+1;
@@ -40,6 +55,7 @@ int balloc(int dev) // returns a FREE disk block number
   for (i=0; i < nblocks; i++){
     if (tst_bit(buf, i)==0){
         set_bit(buf, i);
+        decFreeInodes(dev);
         put_block(dev, imap, buf);
         printf("allocated = %d\n", i+1); // bits count from 0; ino from 1
         return i+1;

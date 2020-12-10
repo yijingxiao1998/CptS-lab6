@@ -11,6 +11,14 @@ int init()
   OFT *oft;
 
   printf("init()\n");
+  
+  // initialize all mtable entries
+  for(i=0; i<NMTABLE; i++)
+  	mtable[i].dev = 0;
+  // setting first entry in mtbale to opening filesys
+  strcpy(mtable[0].devName, disk);
+  strcpy(mtable[0].mntName, "/");
+  mtable[0].dev = dev;
 
   // initialize all minodes as FREE
   for (i=0; i<NMINODE; i++){  
@@ -43,8 +51,6 @@ int mount_root()  // mount root file system
   root = iget(dev, 2);
 }
 
-char *disk = "disk2";   // default device
-//char *disk = "diskimage";
 int main(int argc, char *argv[ ])
 {
   char* readLinkBuf=malloc(BLKSIZE);

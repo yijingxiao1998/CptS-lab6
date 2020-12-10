@@ -85,7 +85,8 @@ int rmdir(char *pathname)
      return -1;
   }
   //2. get inumber of pathname: determine dev, then  
-  ino = getino(pathname); 
+  ino = getino(pathname, &dev); 
+  printf("ino=%d", ino);
   
   //3. get its minode[ ] pointer:
   mip = iget(dev, ino);
@@ -128,9 +129,9 @@ int rmdir(char *pathname)
      	return -1;
   }
   // check minode is busy or not
-  if(mip->refCount != 1)  
+  if(mip->refCount > 1)  
   {
-     	printf("minode is busy\n");
+     	printf("minode is busy %d\n", mip->refCount);
      	iput(mip);
      	return -1;
   }
@@ -174,7 +175,7 @@ int rmdir(char *pathname)
   strncpy(temp, pathname, strlen(pathname));
   temp[strlen(pathname)] = 0;
   parent = dirname(temp);
-  pino = getino(parent);
+  pino = getino(parent, &dev);
   printf("parent ino = %d\n", pino);
   pmip = iget(mip->dev, pino);
 

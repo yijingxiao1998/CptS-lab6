@@ -38,11 +38,12 @@ int mount_root()  // mount root file system
   root = iget(dev, 2);
 }
 
-char *disk = "diskimage";   // default device
+char *disk = "disk1";   // default device
 int main(int argc, char *argv[ ])
 {
   int ino;
   char buf[BLKSIZE];
+  char* readLinkBuf=malloc(BLKSIZE);
   char line[128], cmd[32], pathname[128], temp[128];
 
   if (argc > 1)
@@ -111,12 +112,14 @@ int main(int argc, char *argv[ ])
       creat_file(pathname);
     if(strcmp(cmd, "rmdir")==0)
       rmdir(pathname);
-    /*if(strcmp(cmd, "link") == 0)
-    {
+    if(strcmp(cmd, "link") == 0)
     	link(pathname, temp);
-    }
     if(strcmp(cmd, "unlink") == 0)
-    	unlink(pathname);*/
+    	unlink(pathname);
+    if(strcmp(cmd, "symlink")==0)
+    	symlink(pathname, temp);
+    if(strcmp(cmd, "readlink")==0)
+      	readlink(pathname, readLinkBuf, BLKSIZE);
 
     if (strcmp(cmd, "quit")==0)
        quit();

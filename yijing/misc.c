@@ -1,7 +1,7 @@
 int stat_file(char *pathname)
 { 
         struct stat myst;   // p 205
-        int ino = getino(pathname);  // get INODE of filename into memory:
+        int ino = getino(pathname, &dev);  // get INODE of filename into memory:
         MINODE *mip = iget(dev, ino);
         // copy dev, ino to myst.st_dev, myst.st_ino;
         myst.st_dev = dev;
@@ -33,7 +33,7 @@ int chmod_file(char *pathname, int mode)
 {
 	// name mode: (mode = |rwx|rwx|rwx|, e.g. 0644 in octal)
 	// get INODE of pathname into memroy:
-	int ino = getino(pathname);
+	int ino = getino(pathname, &dev);
 	MINODE *mip = iget(dev, ino);
 	printf("chmod: mode is %d\n", mode);
 	

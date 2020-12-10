@@ -17,11 +17,11 @@ int open_file(char *filename, int mode)
   	dev = running->cwd->dev;  
   	
   // get file’s minode:
-  ino = getino(filename); 
+  ino = getino(filename, &dev); 
   if (ino == 0)  // if file does not exist
   {   
   	creat_file(filename);      // creat it first, then
-  	ino = getino(filename);    // get its ino
+  	ino = getino(filename, &dev);    // get its ino
   }
 
   // 3. get its Minode pointer

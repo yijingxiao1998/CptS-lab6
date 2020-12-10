@@ -23,16 +23,15 @@ int   n;         // number of component strings
 
 int fd, dev;
 int nblocks, ninodes, bmap, imap, inode_start;
+int readlinkbuf = 0;   // for readlink
 
 MINODE *iget();
 
 #include "util.c"
 #include "rmdir.c"
-#include "pwd.c"
-#include "cd.c"
-#include "ls.c"
+#include "cd_ls_pwd.c"
 #include "quit.c"
-#include "mkdir.c"
-#include "creat.c"
+#include "mkdir_creat.c"
 #include "alloc_dealloc.c"
-//#include "link_unlink_symlink.c"
+#include "link_unlink.c"
+#include "symlink_readlink.c"

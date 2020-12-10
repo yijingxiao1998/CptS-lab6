@@ -164,17 +164,25 @@ int search(MINODE *mip, char *name)
 }
 
 // (p 326) This function implements the file system tree traversal algorithm. It return the INODE number (ino) of a specified pathname.
-int getino(char *pathname)
+int getino(char *pathname, int *dev)
 {
   // return ino of pathname
   MINODE *mip;
-  int i, ino;
+  int i, j, ino;
+  char temp[256], buf[BLKSIZE];
+  
   if(strcmp(pathname, "/") == 0)
   	return 2;             // return root ino=2
   if(pathname[0] == '/')
-  	mip = root; //iget(dev, 2);           // if absolute pathname: start from root
+  {
+  	dev = root->dev;
+  	mip = root;          // if absolute pathname: start from root
+  }
   else
-  	mip = running->cwd; //iget(running->cwd->dev, running->cwd->ino);    // if relative pathname: start from CWD
+  {
+  	dev = running->cwd->dev;
+  	mip = running->cwd;  // if relative pathname: start from CWD	
+  }
   mip->refCount++;            // in order to iput(mip) later
 
   tokenize(pathname);              // assume: name[], nname are globals
@@ -186,7 +194,7 @@ int getino(char *pathname)
   		//printf("%s is not a directory\n", name[i]);
   		iput(mip);
   		return 0;
-  	}
+  	}	
   	ino = search(mip, name[i]);
   	if(!ino)
   	{
@@ -279,19 +287,17 @@ int enter_name(MINODE *pip, int ino, char *name)
       printf("step to LAST entry in data block %d\n", blk);
       while (cp + dp->rec_len < buf + BLKSIZE)
       {
-         bzero(temp,256);
          strncpy(temp, dp->name, dp->name_len);
          temp[dp->name_len] = 0;
          printf("%8d%8d%8u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
          
          cp += dp->rec_len;
-         dp = (DIR *)cp;
-         ideal_length = 4*( (8 + dp->name_len + 3)/4 );
+         dp = (DIR *)cp;   
       }
       // dp NOW points at last entry in block
       printf("points at last entry in block\n");
+      ideal_length = 4*( (8 + dp->name_len + 3)/4 );
       int remain = dp->rec_len - ideal_length;
-      printf("remain=%d, nl=%d\n", remain, need_length);
       //cp = (char*)dp;
       if (remain >= need_length)
       {
@@ -332,6 +338,7 @@ int enter_name(MINODE *pip, int ino, char *name)
    dp->name_len = strlen(name);
    
    put_block(pip->dev, blk, buf);
+   return 0;
 }
 
 int truncate(MINODE *mip)
