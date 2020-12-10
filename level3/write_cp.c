@@ -84,7 +84,7 @@ int mywrite(int fd, char buf[ ], int nbytes)
          blk = ibuf[(lbk-(12+256)) % 256];	
          put_block(mip->dev, ibuf[(lbk-(12+256))/256], ibuf);
          get_block(mip->dev, ibuf+((lbk-(12+256))/256), ibuf);
-         blk = ibuf + (lbk-(12+256))%256;
+         blk = ibuf + (lbk-(12+256))%256;*/
      }
 
      /* all cases come to here : write to the data block */
